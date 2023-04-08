@@ -1,0 +1,45 @@
+#Compiler
+CC=gcc
+
+#.cpp files
+Files=mysh.c functions.c
+
+#.o Files
+OBJS=mysh.o functions.o
+
+#Executable
+EXEC=exe
+
+#Parameters for run
+ARGS=3 12 12 6
+
+#Create executable
+$(EXEC):$(OBJS)
+	$(CC) $(OBJS) -o $(EXEC)
+
+#Run
+run: $(EXEC)
+	clear
+	./$(EXEC) $(ARGS) $(INPUT)
+
+#debug
+debug: 
+	$(CC) -g3 $(Files) -o $(EXEC) 
+	gdb -q $(EXEC)
+
+#memory-loss
+memory:
+	make
+	valgrind --leak-check=full -s 
+#--leak-check=full \
+         --show-leak-kinds=all \
+         --track-origins=yes \
+         --verbose \
+         --log-file=valgrind-out.txt \
+		 ./$(EXEC) $(ARGS) $(INPUT)
+
+#https://stackoverflow.com/questions/5134891/how-do-i-use-valgrind-to-find-memory-leaks 
+
+#Clear
+clean:
+	rm -f $(OBJS) $(EXEC) 	
