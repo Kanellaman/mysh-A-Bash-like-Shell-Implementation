@@ -1,17 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
-int main()
-{
-  printf("Hello\n");
+#include <unistd.h>
 
-  char *home_dir = getenv("HOME");
-  if (home_dir != NULL)
+int main(char *argc, char **argv)
+{
+  int opt;
+
+  while ((opt = getopt(argc, argv, "abc")) != -1)
   {
-    printf("Home directory is %s\n", home_dir);
+    switch (opt)
+    {
+    case 'a':
+      printf("Option -a was specified\n");
+      break;
+    case 'b':
+      printf("Option -b was specified\n");
+      break;
+    case 'c':
+      printf("Option -c was specified\n");
+      break;
+    default:
+      printf("Invalid option\n");
+      exit(EXIT_FAILURE);
+    }
   }
-  else
-  {
-    printf("Home directory not found\n");
-  }
-  return 0;
+  return 1;
 }

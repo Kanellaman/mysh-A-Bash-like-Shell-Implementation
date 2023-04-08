@@ -19,8 +19,7 @@ $(EXEC):$(OBJS)
 
 #Run
 run: $(EXEC)
-	clear
-	./$(EXEC) $(ARGS) $(INPUT)
+	./$(EXEC) $(ARGS)
 
 #debug
 debug: 
