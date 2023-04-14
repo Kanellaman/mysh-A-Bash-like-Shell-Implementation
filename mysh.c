@@ -1,28 +1,22 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "Interface.h"
 
 int main(char *argc, char **argv)
 {
+  ptr hs;
+  init(hs);
   int opt;
-
-  while ((opt = getopt(argc, argv, "abc")) != -1)
+  char *str = malloc(LINE_SIZE), *copy, **tokens;
+  printf("in-mysh-now:>");
+  int i = 0;
+  while (fgets(str, LINE_SIZE, stdin) != NULL && i == 0)
   {
-    switch (opt)
+    tokens = tokenize(str);
+
+    /* while (tokens[i] != NULL)
     {
-    case 'a':
-      printf("Option -a was specified\n");
-      break;
-    case 'b':
-      printf("Option -b was specified\n");
-      break;
-    case 'c':
-      printf("Option -c was specified\n");
-      break;
-    default:
-      printf("Invalid option\n");
-      exit(EXIT_FAILURE);
-    }
+      printf("%s\n", tokens[i++]);
+    } */
+    printf("in-mysh-now:> ");
   }
-  return 1;
+  return 0;
 }
