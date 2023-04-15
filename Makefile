@@ -1,25 +1,25 @@
 #Compiler
-CC=gcc
+CC = gcc
 
-#.cpp files
-Files=mysh.c functions.c
+#.c files
+Files = mysh.c functions.c
 
 #.o Files
-OBJS=mysh.o functions.o
+OBJS = mysh.o functions.o
 
 #Executable
-EXEC=exe
+EXEC = mysh
 
 #Parameters for run
-ARGS=3 12 12 6
+ARGS = 3 12 12 6
 
 #Create executable
-$(EXEC):$(OBJS)
-	$(CC) $(OBJS) -o $(EXEC)
+$(EXEC): $(Files)
+	$(CC) -o $(EXEC) mysh.c functions.c
 
 #Run
-run: $(EXEC)
-	./$(EXEC) $(ARGS)
+run: $(EXEC) $(EXEC2)
+	./$(EXEC) 
 
 #debug
 debug: 
@@ -41,4 +41,4 @@ memory:
 
 #Clear
 clean:
-	rm -f $(OBJS) $(EXEC) 	
+	rm -f $(EXEC) 	
