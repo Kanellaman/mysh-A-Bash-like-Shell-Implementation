@@ -25,3 +25,12 @@ char **tokenize(char *str)
     }
     return tokens;
 }
+
+int cd(char **tokens)
+{
+    char *cd_loc = tokens[1];
+    if (cd_loc == NULL)
+        cd_loc = getenv("HOME");
+    int error = chdir(cd_loc);
+    return error;
+}

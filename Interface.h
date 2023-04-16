@@ -15,3 +15,4 @@ struct history
 ptr init(ptr hs);
 int valid(char *str);
 char **tokenize(char *str);
+int cd(char **tokens);

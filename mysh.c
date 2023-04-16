@@ -20,11 +20,7 @@ int main(char *argc, char **argv)
 
     if (!strcmp(tokens[0], "cd"))
     {
-      char *cd_loc = tokens[1];
-      if (cd_loc == NULL)
-        cd_loc = getenv("HOME");
-      int error = chdir(cd_loc);
-      if (error != 0)
+      if (cd(tokens) != 0)
       {
         perror("chdir");
         exit(EXIT_FAILURE);
@@ -32,6 +28,7 @@ int main(char *argc, char **argv)
     }
     else
     {
+      if()
       pid = fork();
       if (pid == 0)
       {
