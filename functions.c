@@ -10,13 +10,11 @@ int valid(char *str)
     return 1;
 }
 
-char **tokenize(char *str)
+char **tokenize(char *copy)
 {
-    char *copy = malloc(strlen(str) * sizeof(char) + 1);
     char **tokens = malloc(20 * sizeof(char *));
     int i = 0;
 
-    strcpy(copy, str);
     tokens[i] = strtok(copy, " \n/");
     while (tokens[i] != NULL)
     {
@@ -33,4 +31,22 @@ int cd(char **tokens)
         cd_loc = getenv("HOME");
     int error = chdir(cd_loc);
     return error;
+}
+
+int redirection(char **tokens)
+{
+    int i = 0;
+    while (tokens[i] != 0)
+        if (!strcmp(tokens[i++], "<"))
+            return --i;
+    return -1;
+}
+
+void frees(char *str, char *copy, char **tokens, char *s)
+{
+    perror(s);
+    free(str);
+    free(copy);
+    free(tokens);
+    exit(EXIT_FAILURE);
 }

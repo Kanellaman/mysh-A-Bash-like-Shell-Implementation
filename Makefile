@@ -29,13 +29,7 @@ debug:
 #memory-loss
 memory:
 	make
-	valgrind --leak-check=full -s 
-#--leak-check=full \
-         --show-leak-kinds=all \
-         --track-origins=yes \
-         --verbose \
-         --log-file=valgrind-out.txt \
-		 ./$(EXEC) $(ARGS) $(INPUT)
+	valgrind --leak-check=full ./$(EXEC)
 
 #https://stackoverflow.com/questions/5134891/how-do-i-use-valgrind-to-find-memory-leaks 
 
