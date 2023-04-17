@@ -2,8 +2,8 @@
 
 int main(char *argc, char **argv)
 {
-  ptr hs;
-  init(hs);
+  ptr hs = malloc(sizeof(struct history));
+  hs = init(hs);
   int opt;
   char *str = malloc(LINE_SIZE), **tokens;
   printf("in-mysh-now:> ");
@@ -15,7 +15,6 @@ int main(char *argc, char **argv)
     tokens = tokenize(copy);
     if (!strcmp(tokens[0], "exit"))
     {
-
       free(tokens);
       free(copy);
       printf("You are exiting mysh!\n");
@@ -25,63 +24,51 @@ int main(char *argc, char **argv)
     if (!strcmp(tokens[0], "cd"))
     {
       if (cd(tokens) != 0)
-      {
         frees(copy, str, tokens, "chdir");
-      }
+      continue;
     }
-    else
+    // if ((i = redirection(tokens, ">")) != -1)
+    // {
+    //   char *outfile = tokens[i + 1];
+    //   if (outfile == NULL)
+    //     frees(copy, str, tokens, "Missing file for redirection");
+    //   if ((fdout = open(outfile, O_RDONLY)) == -1)
+    //     frees(copy, str, tokens, "open");
+    //   if (dup2(fdout, STDOUT_FILENO) == -1)
+    //     frees(copy, str, tokens, "dup2");
+    //   close(fdout);
+    // }
+    pid = fork();
+    if (pid == 0)
     {
-      int fdin = -1, fd = dup(STDIN_FILENO);
-      if ((i = redirection(tokens)) != -1)
+      char *em[2] = {tokens[0], NULL}, **args;
+      args = em;
+      int fdin, fdout;
+      if ((i = redirection(tokens, "<")) != -1)
       {
         char *infile = tokens[i + 1];
         if (infile == NULL)
-        {
-          printf("Missing file for redirection\n");
-          return 1;
-        }
-        fdin = open(infile, O_RDONLY);
-        if (fdin == -1)
-        {
+          frees(copy, str, tokens, "Missing file for redirection");
+        if ((fdin = open(infile, O_RDONLY)) == -1)
           frees(copy, str, tokens, "open");
-        }
         if (dup2(fdin, STDIN_FILENO) == -1)
-        {
           frees(copy, str, tokens, "dup2");
-        }
         close(fdin);
       }
-      pid = fork();
-      if (pid == 0)
+      int error = execvp(tokens[0], args);
+      if (error == -1)
       {
-        char *em[2] = {tokens[0], NULL}, **args;
-        args = em;
-        int error = execvp(tokens[0], args);
-        if (error == -1)
-        {
-          printf("Check if '%s' is a valid command\n", tokens[0]);
-          frees(copy, str, tokens, "Execvp");
-        }
-      }
-      else
-      {
-        wait(NULL);
-        if (fdin != -1)
-        {
-          if (dup2(fd, STDIN_FILENO) == -1)
-          {
-            frees(copy, str, tokens, "dup2");
-          }
-        }
+        printf("Check if '%s' is a valid command\n", tokens[0]);
+        frees(copy, str, tokens, "Execvp");
       }
     }
+    else
+      wait(NULL);
     printf("in-mysh-now:> ");
     free(tokens);
     free(copy);
   }
-  i = 0;
-
   free(str);
-  // free(hs);
+  free(hs);
   return 0;
 }

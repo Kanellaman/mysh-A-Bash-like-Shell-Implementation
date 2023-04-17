@@ -9,13 +9,14 @@
 typedef struct history *ptr;
 struct history
 {
+    int count;
     char *command[20];
     struct history *next;
 };
 
-void frees(char *str,char *copy, char **tokens,char* s);
+void frees(char *str, char *copy, char **tokens, char *s);
 ptr init(ptr hs);
 int valid(char *str);
 char **tokenize(char *str);
 int cd(char **tokens);
-int redirection(char **tokens);
+int redirection(char **tokens, char *redir);

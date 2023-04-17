@@ -2,6 +2,7 @@
 
 ptr init(ptr hs)
 {
+    hs->count = 0;
     return hs;
 }
 
@@ -33,11 +34,11 @@ int cd(char **tokens)
     return error;
 }
 
-int redirection(char **tokens)
+int redirection(char **tokens, char *redir)
 {
     int i = 0;
     while (tokens[i] != 0)
-        if (!strcmp(tokens[i++], "<"))
+        if (!strcmp(tokens[i++], redir))
             return --i;
     return -1;
 }
