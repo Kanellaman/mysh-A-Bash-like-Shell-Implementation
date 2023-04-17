@@ -11,18 +11,30 @@ int valid(char *str)
     return 1;
 }
 
-char **tokenize(char *copy)
+void tokenize(char *copy, char ***tokens)
 {
-    char **tokens = malloc(20 * sizeof(char *));
-    int i = 0;
+    int i = 0, last = 0;
+    char *cp;
+    cp = strtok(copy, " \n");
+    (*tokens)[i] = cp;
 
-    tokens[i] = strtok(copy, " \n/");
-    while (tokens[i] != NULL)
+    // for (int j = 0; j < strlen(cp); j++)
+    // {
+    //     if (cp[j] == '<')
+    //     {
+    //         char *tmp = malloc(strlen(cp) * sizeof(char) + 1);
+    //         strcpy(tmp, cp);
+    //         tokens[++i] = strtok(tmp, "<");
+    //         tokens[++i] = "<";
+    //         tokens[++i] = strtok(NULL, "<");
+    //     }
+    // }
+    while ((*tokens)[i] != NULL)
     {
         i++;
-        tokens[i] = strtok(NULL, " \n/");
+        cp = strtok(NULL, " \n");
+        (*tokens)[i] = cp;
     }
-    return tokens;
 }
 
 int cd(char **tokens)
@@ -34,13 +46,49 @@ int cd(char **tokens)
     return error;
 }
 
-int redirection(char **tokens, char *redir)
+int find(char **tokens, char *redir)
 {
     int i = 0;
     while (tokens[i] != 0)
         if (!strcmp(tokens[i++], redir))
             return --i;
     return -1;
+}
+
+int redirection(char **tokens, char *redir, char *str, char *copy)
+{
+    int i, fd, dsc;
+    if ((i = find(tokens, redir)) != -1)
+    {
+        char *file = tokens[i + 1];
+        if (file == NULL)
+        {
+            printf("Missing file for redirection");
+            return -1;
+        }
+        if (!strcmp(redir, "<"))
+        {
+            dsc = STDIN_FILENO;
+            fd = open(file, O_RDONLY);
+        }
+        else if (!strcmp(redir, ">"))
+        {
+            dsc = STDOUT_FILENO;
+            fd = open(file, O_WRONLY | O_TRUNC | O_CREAT);
+        }
+        else
+        {
+            dsc = STDOUT_FILENO;
+            fd = open(file, O_WRONLY | O_APPEND | O_CREAT);
+        }
+        if (fd == -1)
+            frees(copy, str, tokens, "open");
+        close(dsc);
+        if (dup2(fd, dsc) == -1)
+            frees(copy, str, tokens, "dup2");
+        close(fd);
+    }
+    return 0;
 }
 
 void frees(char *str, char *copy, char **tokens, char *s)

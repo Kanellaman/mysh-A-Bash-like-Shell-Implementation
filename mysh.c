@@ -7,67 +7,67 @@ int main(char *argc, char **argv)
   int opt;
   char *str = malloc(LINE_SIZE), **tokens;
   printf("in-mysh-now:> ");
-  int i = 0, pid;
+  int pid;
+  char *copy = NULL;
   while (fgets(str, LINE_SIZE, stdin) != NULL)
   {
-    char *copy = malloc(strlen(str) * sizeof(char) + 1);
-    strcpy(copy, str);
-    tokens = tokenize(copy);
-    if (!strcmp(tokens[0], "exit"))
+    if (copy != NULL)
     {
       free(tokens);
       free(copy);
+    }
+    copy = malloc(strlen(str) * sizeof(char) + 1);
+    strcpy(copy, str);
+    tokens = malloc(20 * sizeof(char *));
+    tokenize(copy, &tokens);
+    for (int i = 0; i < 20; i++)
+    {
+      printf("%s ", tokens[i]);
+    }
+    break;
+    if (!strcmp(tokens[0], "exit"))
+    {
       printf("You are exiting mysh!\n");
       break;
     }
-
     if (!strcmp(tokens[0], "cd"))
     {
       if (cd(tokens) != 0)
         frees(copy, str, tokens, "chdir");
-      continue;
-    }
-    // if ((i = redirection(tokens, ">")) != -1)
-    // {
-    //   char *outfile = tokens[i + 1];
-    //   if (outfile == NULL)
-    //     frees(copy, str, tokens, "Missing file for redirection");
-    //   if ((fdout = open(outfile, O_RDONLY)) == -1)
-    //     frees(copy, str, tokens, "open");
-    //   if (dup2(fdout, STDOUT_FILENO) == -1)
-    //     frees(copy, str, tokens, "dup2");
-    //   close(fdout);
-    // }
-    pid = fork();
-    if (pid == 0)
-    {
-      char *em[2] = {tokens[0], NULL}, **args;
-      args = em;
-      int fdin, fdout;
-      if ((i = redirection(tokens, "<")) != -1)
-      {
-        char *infile = tokens[i + 1];
-        if (infile == NULL)
-          frees(copy, str, tokens, "Missing file for redirection");
-        if ((fdin = open(infile, O_RDONLY)) == -1)
-          frees(copy, str, tokens, "open");
-        if (dup2(fdin, STDIN_FILENO) == -1)
-          frees(copy, str, tokens, "dup2");
-        close(fdin);
-      }
-      int error = execvp(tokens[0], args);
-      if (error == -1)
-      {
-        printf("Check if '%s' is a valid command\n", tokens[0]);
-        frees(copy, str, tokens, "Execvp");
-      }
     }
     else
-      wait(NULL);
+    {
+      pid = fork();
+      if (pid == 0)
+      {
+        int in, out;
+        char *em[2] = {tokens[0], NULL}, *args[20];
+
+        for (int i = 0; i < 20; i++)
+          args[i] = tokens[i];
+
+        if (redirection(tokens, "<", copy, str) == -1 || redirection(tokens, ">", copy, str) == -1 || redirection(tokens, ">>", copy, str) == -1)
+          return 0;
+
+        if ((out = find(tokens, ">")) != -1 || (out = find(tokens, ">>")) != -1)
+          args[out] = NULL;
+        if ((in = find(tokens, "<")) != -1)
+          args[in] = NULL;
+
+        int error = execvp(args[0], args);
+        if (error == -1)
+        {
+          perror("Execvp");
+          printf("Check if '%s' is a valid command\n", tokens[0]);
+        }
+      }
+      else
+        wait(NULL);
+    }
     printf("in-mysh-now:> ");
-    free(tokens);
-    free(copy);
   }
+  free(tokens);
+  free(copy);
   free(str);
   free(hs);
   return 0;
