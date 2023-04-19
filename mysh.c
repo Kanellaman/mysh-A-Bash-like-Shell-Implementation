@@ -23,15 +23,22 @@ int main(char *argc, char **argv)
     if (i == 1)
     {
       strcpy(str, get_command(hs, num));
-      printf("Running \"%s\"...", str);
+      printf("Running command %s", str);
       i = 2;
     }
     else if (fgets(str, LINE_SIZE, stdin) == NULL)
       break;
-    
     copy = malloc(strlen(str) * sizeof(char) + 1);
     strcpy(copy, str);
     tokens = tokenize(copy);
+    // for (int i = 0; i < 20; i++)
+    // {
+    //   if (tokens[i] != NULL)
+    //   {
+    //     printf("789%s ", tokens[i]);
+    //   }
+    // }
+    // continue;
     if (tokens == NULL)
     {
       printf("in-mysh-now:> ");

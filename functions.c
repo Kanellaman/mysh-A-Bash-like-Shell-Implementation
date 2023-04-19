@@ -72,7 +72,6 @@ void print(ptr hs)
     printf("%d: %s", i, hs->command);
 }
 
-
 int valid(char *str)
 {
     return 1;
@@ -82,10 +81,11 @@ char **tokenize(char *copy)
 {
     int i = 0, last = 0, j = 0;
     char *cp, **tokens = malloc(20 * sizeof(char *));
+    bool flag = false;
     cp = strtok(copy, " \n");
     if (cp == NULL)
         return NULL;
-    tokens = custom_tokenize(cp, tokens, &i, &last, &j);
+    tokens = custom_tokenize(cp, tokens, &i, &last, &j, &flag);
     tokens[i] = malloc((j - last) * sizeof(char) + 1);
     strncpy(tokens[i], cp + last, j - last);
     tokens[i][j - last] = '\0';
@@ -101,7 +101,7 @@ char **tokenize(char *copy)
         cp = strtok(NULL, " \n");
         if (cp != NULL)
         {
-            tokens = custom_tokenize(cp, tokens, &i, &last, &j);
+            tokens = custom_tokenize(cp, tokens, &i, &last, &j, &flag);
             tokens[i] = malloc((j - last) * sizeof(char) + 1);
             strncpy(tokens[i], cp + last, j - last);
             tokens[i][j - last] = '\0';
@@ -116,11 +116,22 @@ char **tokenize(char *copy)
     free(copy);
     return tokens;
 }
-char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j)
+char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag)
 {
     int x, y = *i;
     for (x = 0; x < strlen(cp); x++)
     {
+        /* if (cp[x] == '"')
+        {
+            if (!flag)
+            {
+                flag = true;
+            }
+            else
+            {
+            }
+        }
+        else */
         if (cp[x] == '>' && x + 1 < strlen(cp) && cp[x + 1] == '>')
         {
             char *s = ">>";
@@ -193,23 +204,22 @@ int redirection(char **tokens, char *redir, char *str, char *copy)
         else if (!strcmp(redir, ">"))
         {
             dsc = STDOUT_FILENO;
-            fd = open(file, O_WRONLY | O_TRUNC | O_CREAT);
+            fd = open(file, O_WRONLY | O_TRUNC | O_CREAT, S_IWUSR | S_IWGRP | S_IWOTH);
         }
         else
         {
             dsc = STDOUT_FILENO;
-            fd = open(file, O_WRONLY | O_APPEND | O_CREAT);
+            fd = open(file, O_WRONLY | O_APPEND | O_CREAT, S_IWUSR | S_IWGRP | S_IWOTH);
         }
         if (fd == -1)
         {
-            printf("%ld %d ", strlen(file), dsc);
-            printf("OXI? %s", file);
-            // frees(copy, str, tokens, "open");
-            exit(5);
+            perror("open");
+            exit(0);
         }
         close(dsc);
         if (dup2(fd, dsc) == -1)
-            frees(copy, str, tokens, "dup2");
+            exit(0);
+        // frees(copy, str, tokens, "dup2");
         close(fd);
     }
     return 0;

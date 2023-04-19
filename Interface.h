@@ -19,7 +19,7 @@ struct history
 void frees(char *str, char *copy, char **tokens, char *s);
 int valid(char *str);
 char **tokenize(char *str);
-char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j);
+char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j,bool *flag);
 int cd(char **tokens);
 int find(char **tokens, char *redir);
 int redirection(char **tokens, char *redir, char *str, char *copy);
