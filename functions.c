@@ -1,4 +1,16 @@
 #include "Interface.h"
+char *get_command(ptr hs, int num)
+{
+    int i = 1;
+    while (hs->next != NULL)
+    {
+        if (i++ == num)
+            return hs->command;
+        hs = hs->next;
+    }
+    if (i == num)
+        return hs->command;
+}
 void del(ptr hs)
 {
     if (hs == NULL)
@@ -15,44 +27,51 @@ ptr append(ptr hs, char *str)
     if (hs == NULL)
     {
         hs = malloc(sizeof(struct history));
-        hs->count = 0;
+        hs->count = 1;
         strcpy(hs->command, str);
         hs->next = NULL;
         return hs;
     }
     ptr head = hs;
+
     while (hs->next != NULL)
+    {
+        if (!strcmp(str, hs->command))
+            return head;
         hs = hs->next;
-    if (hs->count == 20)
+    }
+    if (!strcmp(str, hs->command))
+        return head;
+
+    head->count = head->count + 1;
+    if (head->count == 20)
     {
         hs = head->next;
+        hs->count = 19;
         free(head);
         head = hs;
-        while (hs->next != NULL)
-        {
-            hs->count--;
-            hs = hs->next;
-        }
     }
+    while (hs->next != NULL)
+        hs = hs->next;
     hs->next = malloc(sizeof(struct history));
-    hs->next->count = hs->count + 1;
     strcpy(hs->next->command, str);
+    hs->next->count = 0;
     hs->next->next = NULL;
     return head;
 }
-ptr print(ptr hs)
+void print(ptr hs)
 {
     int i = 1;
+    if (hs == NULL)
+        return;
     while (hs->next != NULL)
     {
         printf("%d: %s", i++, hs->command);
         hs = hs->next;
     }
+    printf("%d: %s", i, hs->command);
 }
-ptr init(ptr hs)
-{
-    return hs;
-}
+
 
 int valid(char *str)
 {
@@ -64,6 +83,8 @@ char **tokenize(char *copy)
     int i = 0, last = 0, j = 0;
     char *cp, **tokens = malloc(20 * sizeof(char *));
     cp = strtok(copy, " \n");
+    if (cp == NULL)
+        return NULL;
     tokens = custom_tokenize(cp, tokens, &i, &last, &j);
     tokens[i] = malloc((j - last) * sizeof(char) + 1);
     strncpy(tokens[i], cp + last, j - last);
