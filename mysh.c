@@ -3,6 +3,7 @@
 int main(char *argc, char **argv)
 {
   ptr hs = NULL;
+  alr al = NULL, alias;
   int opt;
   char *str = malloc(LINE_SIZE), **tokens = NULL;
   printf("in-mysh-now:> ");
@@ -12,7 +13,7 @@ int main(char *argc, char **argv)
   {
     if (tokens != NULL)
     {
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < TOKEN_NUM; i++)
         if (tokens[i] != NULL)
         {
           free(tokens[i]);
@@ -28,17 +29,25 @@ int main(char *argc, char **argv)
     }
     else if (fgets(str, LINE_SIZE, stdin) == NULL)
       break;
+    char *tmp = malloc(strlen(str) * sizeof(char) + 1);
+    strcpy(tmp, str);
+    tmp[strlen(tmp) - 1] = '\0';
+    if ((alias = search(al, tmp)) != NULL)
+    {
+      strcpy(str, alias->cmd);
+    }
+    free(tmp);
     copy = malloc(strlen(str) * sizeof(char) + 1);
     strcpy(copy, str);
     tokens = tokenize(copy);
-    // for (int i = 0; i < 20; i++)
-    // {
-    //   if (tokens[i] != NULL)
-    //   {
-    //     printf("789%s ", tokens[i]);
-    //   }
-    // }
-    // continue;
+    for (int i = 0; i < TOKEN_NUM; i++)
+    {
+      if (tokens[i] != NULL)
+      {
+        printf("%s\n", tokens[i]);
+      }
+    }
+    continue;
     if (tokens == NULL)
     {
       printf("in-mysh-now:> ");
@@ -68,6 +77,31 @@ int main(char *argc, char **argv)
       else
         printf("Bad syntax of command \"history\".\nTry \"history\" or \"history <num>\" where num is in number in the range of 1..20\n");
     }
+    else if (!strcmp(tokens[0], "createalias"))
+    {
+      if (tokens[3] != NULL && tokens[2][0] == '\"')
+      {
+        alr tmp;
+        char *cmd = malloc((LINE_SIZE / 2));
+        strncpy(cmd, tokens[2] + 1, strlen(tokens[2]) - 2);
+        cmd[strlen(tokens[2]) - 1] = '\0';
+        tmp = in(al, tokens[1], cmd);
+        if (tmp != NULL)
+          al = tmp;
+        free(cmd);
+      }
+      else
+        printf("Bad syntax of command \"createalias\".\nTry createalias <alias> \"command to alias\";\n");
+    }
+    else if (!strcmp(tokens[0], "destroyalias"))
+    {
+      if (tokens[2] != NULL)
+      {
+        al = delal(al, tokens[1]);
+      }
+      else
+        printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
+    }
     else if (!strcmp(tokens[0], "cd"))
     {
       if (cd(tokens) != 0)
@@ -81,7 +115,7 @@ int main(char *argc, char **argv)
         int in = 0, out = 0;
         char *em[2] = {tokens[0], NULL}, *args[20];
 
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < TOKEN_NUM; i++)
         {
           if (tokens[i] == NULL)
             break;
@@ -99,7 +133,7 @@ int main(char *argc, char **argv)
         if (error == -1)
         {
           perror("Execvp");
-          printf("Check if '%s' is a valid command\n", tokens[0]);
+          printf("Check if '%s' is a valid command or alias\n", tokens[0]);
         }
         exit(0); // In case execvp returns with an error
       }
@@ -109,7 +143,7 @@ int main(char *argc, char **argv)
       }
     }
     hs = append(hs, str);
-    if (i != 0)
+    if (i != 0 && i != 1)
       printf("in-mysh-now:> ");
   }
   for (int i = 0; i < 20; i++)
