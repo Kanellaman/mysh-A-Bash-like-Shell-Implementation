@@ -40,14 +40,14 @@ int main(char *argc, char **argv)
     copy = malloc(strlen(str) * sizeof(char) + 1);
     strcpy(copy, str);
     tokens = tokenize(copy);
-    for (int i = 0; i < TOKEN_NUM; i++)
-    {
-      if (tokens[i] != NULL)
-      {
-        printf("%s\n", tokens[i]);
-      }
-    }
-    continue;
+    // for (int i = 0; i < TOKEN_NUM; i++)
+    // {
+    //   if (tokens[i] != NULL)
+    //   {
+    //     printf("%s\n", tokens[i]);
+    //   }
+    // }
+    // continue;
     if (tokens == NULL)
     {
       printf("in-mysh-now:> ");
