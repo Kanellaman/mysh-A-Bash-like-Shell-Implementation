@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <glob.h>
 
 #define LINE_SIZE 1024
 #define TOKEN_NUM 20
@@ -35,3 +36,4 @@ char *get_command(ptr hs, int num);
 alr delal(alr al,char *alias);
 alr in(alr al, char *alias, char *cmd);
 alr search(alr al, char *alias);
+void dele(alr al);

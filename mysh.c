@@ -9,6 +9,8 @@ int main(char *argc, char **argv)
   printf("in-mysh-now:> ");
   int pid, ff = 0, i = 2, num;
   char *copy = NULL;
+  glob_t globbuf;
+  int flags = GLOB_NOCHECK | GLOB_TILDE;
   while (i != 0)
   {
     if (tokens != NULL)
@@ -33,27 +35,47 @@ int main(char *argc, char **argv)
     strcpy(tmp, str);
     tmp[strlen(tmp) - 1] = '\0';
     if ((alias = search(al, tmp)) != NULL)
-    {
       strcpy(str, alias->cmd);
-    }
     free(tmp);
     copy = malloc(strlen(str) * sizeof(char) + 1);
     strcpy(copy, str);
     tokens = tokenize(copy);
-    // for (int i = 0; i < TOKEN_NUM; i++)
-    // {
-    //   if (tokens[i] != NULL)
-    //   {
-    //     printf("%s\n", tokens[i]);
-    //   }
-    // }
-    // continue;
     if (tokens == NULL)
     {
       printf("in-mysh-now:> ");
       continue;
     }
-    else if (!strcmp(tokens[0], "exit"))
+    int j = 0;
+    char **args = malloc(TOKEN_NUM * sizeof(char *));
+    for (int i = 0; i < TOKEN_NUM; i++)
+      args[i] = NULL;
+    args[j++] = tokens[0];
+    for (int i = 1; tokens[i] != NULL; i++)
+    {
+      if (strchr(tokens[i], '*') != NULL || strchr(tokens[i], '?') != NULL)
+      {
+
+        if (glob(tokens[i], flags, NULL, &globbuf) == 0)
+        {
+          for (size_t i = 0; i < globbuf.gl_pathc; i++)
+          {
+            args[j] = malloc(strlen(globbuf.gl_pathv[i]) * sizeof(char) + 1);
+            strcpy(args[j++], globbuf.gl_pathv[i]);
+          }
+          globfree(&globbuf);
+          free(tokens[i]);
+        }
+      }
+      else
+        args[j++] = tokens[i];
+    }
+
+    // for (int i = 0; i < TOKEN_NUM; i++)
+    //   if (args[i] != NULL)
+    //     printf("%s\n", args[i]);
+    free(tokens);
+    tokens = args;
+    if (!strcmp(tokens[0], "exit"))
     {
       printf("You are exiting mysh!\n");
       i = 0;
@@ -61,11 +83,7 @@ int main(char *argc, char **argv)
     else if (!strcmp(tokens[0], "history"))
     {
       if (tokens[1] == NULL)
-      {
         print(hs);
-        printf("in-mysh-now:> ");
-        continue;
-      }
       else if (sscanf(tokens[1], "%d", &num) == 1 && tokens[2] == NULL)
         if (num > 0 && num <= hs->count)
         {
@@ -118,7 +136,10 @@ int main(char *argc, char **argv)
         for (int i = 0; i < TOKEN_NUM; i++)
         {
           if (tokens[i] == NULL)
+          {
+            args[i] = NULL;
             break;
+          }
           args[i] = malloc(strlen(tokens[i]) * sizeof(char) + 1);
           strcpy(args[i], tokens[i]);
         }
@@ -142,7 +163,8 @@ int main(char *argc, char **argv)
         wait(NULL);
       }
     }
-    hs = append(hs, str);
+    if (i != 1)
+      hs = append(hs, str);
     if (i != 0 && i != 1)
       printf("in-mysh-now:> ");
   }
@@ -152,5 +174,7 @@ int main(char *argc, char **argv)
   free(tokens);
   free(str);
   del(hs);
+  dele(al);
+  // globfree(&globbuf);
   return 0;
 }

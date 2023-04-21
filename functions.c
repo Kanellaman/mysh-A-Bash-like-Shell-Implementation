@@ -13,14 +13,16 @@ char *get_command(ptr hs, int num)
 }
 void del(ptr hs)
 {
+    ptr prev;
     if (hs == NULL)
         return;
     while (hs->next != NULL)
     {
-        ptr prev = hs;
+        prev = hs;
         hs = hs->next;
         free(prev);
     }
+    free(hs);
 }
 ptr append(ptr hs, char *str)
 {
@@ -141,7 +143,19 @@ alr delal(alr al, char *alias)
     printf("Alias \"%s\" does not exist\n", alias);
     return head;
 }
-
+void dele(alr al)
+{
+    alr prev;
+    if (al == NULL)
+        return;
+    while (al->next != NULL)
+    {
+        prev = al;
+        al = al->next;
+        free(prev);
+    }
+    free(al);
+}
 char **tokenize(char *copy)
 {
     int i = 0, last = 0, j = 0, count = 0;
@@ -327,12 +341,12 @@ int redirection(char **tokens, char *redir, char *str, char *copy)
         else if (!strcmp(redir, ">"))
         {
             dsc = STDOUT_FILENO;
-            fd = open(file, O_WRONLY | O_TRUNC | O_CREAT, S_IWUSR | S_IWGRP | S_IWOTH);
+            fd = open(file, O_WRONLY | O_TRUNC | O_CREAT, 0644);
         }
         else
         {
             dsc = STDOUT_FILENO;
-            fd = open(file, O_WRONLY | O_APPEND | O_CREAT, S_IWUSR | S_IWGRP | S_IWOTH);
+            fd = open(file, O_WRONLY | O_APPEND | O_CREAT, 0644);
         }
         if (fd == -1)
         {
