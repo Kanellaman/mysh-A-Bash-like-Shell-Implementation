@@ -316,49 +316,53 @@ int cd(char **tokens)
 int find(char **tokens, char *redir)
 {
     int i = 0;
-    while (tokens[i] != 0)
+    while (tokens[i] != NULL)
         if (!strcmp(tokens[i++], redir))
             return --i;
     return -1;
 }
 
-int redirection(char **tokens, char *redir, char *str, char *copy)
+int redirection(char **tokens)
 {
-    int i, fd, dsc;
-    if ((i = find(tokens, redir)) != -1)
+    int i = 0, fd, dsc;
+    while (tokens[i] != NULL)
     {
-        char *file = tokens[i + 1];
-        if (file == NULL)
+        if (!strcmp(tokens[i], "<") || !strcmp(tokens[i], ">"))
         {
-            printf("Missing file for redirection");
-            return -1;
+            char *file = tokens[i + 1];
+            if (file == NULL)
+            {
+                printf("Missing file for redirection");
+                return -1;
+            }
+            if (!strcmp(tokens[i], "<"))
+            {
+                dsc = STDIN_FILENO;
+                fd = open(file, O_RDONLY);
+            }
+            else if (!strcmp(tokens[i], ">"))
+            {
+                dsc = STDOUT_FILENO;
+                fd = open(file, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+            }
+            else
+            {
+                dsc = STDOUT_FILENO;
+                fd = open(file, O_WRONLY | O_APPEND | O_CREAT, 0644);
+            }
+            if (fd == -1)
+            {
+                perror("open");
+                exit(0);
+            }
+            close(dsc);
+            if (dup2(fd, dsc) == -1)
+                exit(0);
+            close(fd);
         }
-        if (!strcmp(redir, "<"))
-        {
-            dsc = STDIN_FILENO;
-            fd = open(file, O_RDONLY);
-        }
-        else if (!strcmp(redir, ">"))
-        {
-            dsc = STDOUT_FILENO;
-            fd = open(file, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-        }
-        else
-        {
-            dsc = STDOUT_FILENO;
-            fd = open(file, O_WRONLY | O_APPEND | O_CREAT, 0644);
-        }
-        if (fd == -1)
-        {
-            perror("open");
-            exit(0);
-        }
-        close(dsc);
-        if (dup2(fd, dsc) == -1)
-            exit(0);
-        close(fd);
+        i++;
     }
-    return 0;
+    // return 0;
 }
 
 void frees(char *str, char *copy, char **tokens, char *s)
@@ -367,4 +371,58 @@ void frees(char *str, char *copy, char **tokens, char *s)
     free(str);
     free(tokens);
     exit(EXIT_FAILURE);
+}
+
+char **wild(char **argv, char **tokens)
+{
+}
+
+int hs_al(char **tokens, ptr *(hs), alr *al)
+{
+    int num;
+    if (!strcmp(tokens[0], "history"))
+    {
+        if (tokens[1] == NULL)
+        {
+            *hs = append(*hs, "history\n");
+            print((*hs));
+        }
+        else if (sscanf(tokens[1], "%d", &num) == 1 && tokens[2] == NULL)
+            if (num > 0 && num <= (*hs)->count)
+            {
+                printf("Getting the %dth command of the history...\n", num);
+                return 1;
+            }
+            else
+                printf("There is no %dth command in history...Try command \"history\" to see the command history\n", num);
+
+        else
+            printf("Bad syntax of command \"history\".\nTry \"history\" or \"history <num>\" where num is in number in the range of 1..20\n");
+    }
+    else if (!strcmp(tokens[0], "createalias"))
+    {
+        if (tokens[3] != NULL && tokens[2][0] == '\"')
+        {
+            alr tmp;
+            char *cmd = malloc((LINE_SIZE / 2));
+            strncpy(cmd, tokens[2] + 1, strlen(tokens[2]) - 2);
+            cmd[strlen(tokens[2]) - 1] = '\0';
+            tmp = in(*al, tokens[1], cmd);
+            if (tmp != NULL)
+                *al = tmp;
+            free(cmd);
+        }
+        else
+            printf("Bad syntax of command \"createalias\".\nTry createalias <alias> \"command to alias\";\n");
+    }
+    else if (!strcmp(tokens[0], "destroyalias"))
+    {
+        if (tokens[2] != NULL)
+            *al = delal(*al, tokens[1]);
+        else
+            printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
+    }
+    else
+        return 0;
+    return -1;
 }

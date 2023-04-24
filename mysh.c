@@ -69,56 +69,21 @@ int main(char *argc, char **argv)
       else
         args[j++] = tokens[i];
     }
-
     // for (int i = 0; i < TOKEN_NUM; i++)
     //   if (args[i] != NULL)
     //     printf("%s\n", args[i]);
     free(tokens);
     tokens = args;
+    int lole = hs_al(tokens, &hs, &al);
     if (!strcmp(tokens[0], "exit"))
     {
       printf("You are exiting mysh!\n");
       i = 0;
     }
-    else if (!strcmp(tokens[0], "history"))
+    else if (lole != 0)
     {
-      if (tokens[1] == NULL)
-        print(hs);
-      else if (sscanf(tokens[1], "%d", &num) == 1 && tokens[2] == NULL)
-        if (num > 0 && num <= hs->count)
-        {
-          printf("Getting the %dth command of the history...\n", num);
-          i = 1;
-        }
-        else
-          printf("There is no %dth command in history...Try command \"history\" to see the command history\n", num);
-      else
-        printf("Bad syntax of command \"history\".\nTry \"history\" or \"history <num>\" where num is in number in the range of 1..20\n");
-    }
-    else if (!strcmp(tokens[0], "createalias"))
-    {
-      if (tokens[3] != NULL && tokens[2][0] == '\"')
-      {
-        alr tmp;
-        char *cmd = malloc((LINE_SIZE / 2));
-        strncpy(cmd, tokens[2] + 1, strlen(tokens[2]) - 2);
-        cmd[strlen(tokens[2]) - 1] = '\0';
-        tmp = in(al, tokens[1], cmd);
-        if (tmp != NULL)
-          al = tmp;
-        free(cmd);
-      }
-      else
-        printf("Bad syntax of command \"createalias\".\nTry createalias <alias> \"command to alias\";\n");
-    }
-    else if (!strcmp(tokens[0], "destroyalias"))
-    {
-      if (tokens[2] != NULL)
-      {
-        al = delal(al, tokens[1]);
-      }
-      else
-        printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
+      if (lole == 1)
+        i = lole;
     }
     else if (!strcmp(tokens[0], "cd"))
     {
@@ -127,29 +92,48 @@ int main(char *argc, char **argv)
     }
     else
     {
+      int i = 0, pipes = 0;
+      while (tokens[i] != NULL)
+      {
+        if (!strcmp(tokens[i++], "|"))
+          pipes++;
+      }
+      if (!strcmp(tokens[i - 1], "|"))
+      {
+        printf("Expected command after last pipe |\n");
+        exit(0);
+      }
+      if (pipes != 0)
+      {
+        printf("%d", pipes);
+        exit(0);
+      }
       pid = fork();
       if (pid == 0)
       {
-        int in = 0, out = 0;
-        char *em[2] = {tokens[0], NULL}, *args[20];
+        char **args = malloc(TOKEN_NUM * sizeof(char *));
 
         for (int i = 0; i < TOKEN_NUM; i++)
-        {
-          if (tokens[i] == NULL)
-          {
-            args[i] = NULL;
-            break;
-          }
-          args[i] = malloc(strlen(tokens[i]) * sizeof(char) + 1);
-          strcpy(args[i], tokens[i]);
-        }
-        if (redirection(tokens, "<", copy, str) == -1 || redirection(tokens, ">", copy, str) == -1 || redirection(tokens, ">>", copy, str) == -1)
+          args[i] = NULL;
+        if (redirection(tokens) == -1)
           return 0;
+        int i = 0, j = 0;
+        while (tokens[i] != NULL)
+        {
+          if (!strcmp(tokens[i], "<") || !strcmp(tokens[i], ">"))
+          {
+            i += 2;
+            continue;
+          }
+          args[j] = malloc(strlen(tokens[i]) * sizeof(char) + 1);
+          strcpy(args[j++], tokens[i++]);
+        }
+        // for (int i = 0; i < TOKEN_NUM; i++)
+        // {
+        //   if (args[i] != NULL)
+        //   printf("aa%s\n", args[i]);
+        // }
 
-        if ((out = find(tokens, ">")) != -1 || (out = find(tokens, ">>")) != -1)
-          args[out] = NULL;
-        if ((in = find(tokens, "<")) != -1)
-          args[in] = NULL;
         int error = execvp(args[0], args);
         if (error == -1)
         {
@@ -175,6 +159,5 @@ int main(char *argc, char **argv)
   free(str);
   del(hs);
   dele(al);
-  // globfree(&globbuf);
   return 0;
 }

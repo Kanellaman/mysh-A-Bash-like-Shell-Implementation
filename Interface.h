@@ -8,7 +8,7 @@
 #include <glob.h>
 
 #define LINE_SIZE 1024
-#define TOKEN_NUM 20
+#define TOKEN_NUM 50
 
 typedef struct history *ptr;
 typedef struct alias *alr;
@@ -28,7 +28,7 @@ char **tokenize(char *str);
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j,bool *flag);
 int cd(char **tokens);
 int find(char **tokens, char *redir);
-int redirection(char **tokens, char *redir, char *str, char *copy);
+int redirection(char **tokens);
 ptr append(ptr hs,char *str);
 void print(ptr hs);
 void del(ptr hs);
@@ -37,3 +37,4 @@ alr delal(alr al,char *alias);
 alr in(alr al, char *alias, char *cmd);
 alr search(alr al, char *alias);
 void dele(alr al);
+int hs_al(char **tokens, ptr *hs, alr *al);
