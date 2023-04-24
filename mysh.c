@@ -5,13 +5,13 @@ int main(char *argc, char **argv)
   ptr hs = NULL;
   alr al = NULL;
   int opt;
-  char *str = malloc(LINE_SIZE), **tokens = NULL;
+  char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
   printf("in-mysh-now:> ");
   int pid, ff = 0, i = 2, num;
   char *copy = NULL;
   glob_t globbuf;
   int flags = GLOB_NOCHECK | GLOB_TILDE;
-  while (i != 0)
+  while (fgets(str, LINE_SIZE, stdin) != NULL)
   {
     if (tokens != NULL)
     {
@@ -23,16 +23,15 @@ int main(char *argc, char **argv)
         }
       free(tokens);
     }
-    if (fgets(str, LINE_SIZE, stdin) == NULL)
-      break;
     hs = append(hs, str);
 
-    tokens = tokenize(str, al);
+    tokens = tokenize(str, al, &globbuf);
     if (tokens == NULL)
     {
       printf("in-mysh-now:> ");
       continue;
     }
+
     while ((num = hs_al(tokens, &hs, &al)) > 0)
     {
       strcpy(str, get_command(hs, num));
@@ -45,30 +44,22 @@ int main(char *argc, char **argv)
         }
       free(tokens);
       hs = append(hs, str);
-      tokens = tokenize(str, al);
+      tokens = tokenize(str, al, &globbuf);
     }
-    int p = 0, pipes = 0;
-    while (tokens[p] != NULL)
-    {
-      if (!strcmp(tokens[p++], "|"))
-        pipes++;
-    }
-    if (!strcmp(tokens[p - 1], "|"))
-    {
-      printf("Expected command after last pipe |\n");
-      exit(0);
-    }
+
     if (!strcmp(tokens[0], "exit"))
     {
       printf("You are exiting mysh!\n");
-      i = 0;
+      break;
     }
     else if (!strcmp(tokens[0], "cd"))
     {
       if (cd(tokens) != 0)
         perror("cd");
+      printf("in-mysh-now:> ");
+      continue;
     }
-    else if (num != 0)
+    if (num != 0)
     {
       pid = fork();
       if (pid == 0)
@@ -100,12 +91,9 @@ int main(char *argc, char **argv)
         exit(0); // In case execvp returns with an error
       }
       else
-      {
         wait(NULL);
-      }
     }
-    if (i != 0 && i != 1)
-      printf("in-mysh-now:> ");
+    printf("in-mysh-now:> ");
   }
   for (int i = 0; i < 20; i++)
     if (tokens[i] != NULL)

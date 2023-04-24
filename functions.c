@@ -151,7 +151,7 @@ void dele(alr al)
     }
     free(al);
 }
-char **tokenize(char *str, alr al)
+char **tokenize(char *str, alr al, glob_t *globbuf)
 {
     alr alias;
     char *tmp = malloc(strlen(str) * sizeof(char) + 1);
@@ -268,7 +268,7 @@ char **tokenize(char *str, alr al)
     }
     free(cp);
     free(copy);
-    return wild(tokens);
+    return wild(tokens, globbuf);
 }
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag)
 {
@@ -379,9 +379,8 @@ void frees(char *str, char *copy, char **tokens, char *s)
     exit(EXIT_FAILURE);
 }
 
-char **wild(char **tokens)
+char **wild(char **tokens, glob_t *globbuf)
 {
-    glob_t globbuf;
     int flags = GLOB_NOCHECK | GLOB_TILDE, j = 0;
     char **args = malloc(TOKEN_NUM * sizeof(char *));
     for (int i = 0; i < TOKEN_NUM; i++)
@@ -392,14 +391,14 @@ char **wild(char **tokens)
         if (strchr(tokens[i], '*') != NULL || strchr(tokens[i], '?') != NULL)
         {
 
-            if (glob(tokens[i], flags, NULL, &globbuf) == 0)
+            if (glob(tokens[i], flags, NULL, globbuf) == 0)
             {
-                for (size_t i = 0; i < globbuf.gl_pathc; i++)
+                for (size_t i = 0; i < globbuf->gl_pathc; i++)
                 {
-                    args[j] = malloc(strlen(globbuf.gl_pathv[i]) * sizeof(char) + 1);
-                    strcpy(args[j++], globbuf.gl_pathv[i]);
+                    args[j] = malloc(strlen(globbuf->gl_pathv[i]) * sizeof(char) + 1);
+                    strcpy(args[j++], globbuf->gl_pathv[i]);
                 }
-                globfree(&globbuf);
+                globfree(globbuf);
                 free(tokens[i]);
             }
         }
