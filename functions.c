@@ -37,19 +37,15 @@ ptr append(ptr hs, char *str)
     ptr head = hs;
 
     while (hs->next != NULL)
-    {
-        if (!strcmp(str, hs->command))
-            return head;
         hs = hs->next;
-    }
     if (!strcmp(str, hs->command))
         return head;
 
     head->count = head->count + 1;
-    if (head->count == 20)
+    if (head->count == 21)
     {
         hs = head->next;
-        hs->count = 19;
+        hs->count = 20;
         free(head);
         head = hs;
     }
@@ -86,7 +82,6 @@ alr in(alr al, char *alias, char *cmd)
     }
     if ((tmp = search(al, alias)) != NULL)
     {
-        printf("Alias \"%s\" is already assigned to command \"%s\"\n", alias, tmp->cmd);
         strcpy(tmp->cmd, cmd);
         return head;
     }
@@ -156,11 +151,22 @@ void dele(alr al)
     }
     free(al);
 }
-char **tokenize(char *copy)
+char **tokenize(char *str, alr al)
 {
+    alr alias;
+    char *tmp = malloc(strlen(str) * sizeof(char) + 1);
+    strcpy(tmp, str);
+    tmp[strlen(tmp) - 1] = '\0'; // Filter out the '\n' character of the stirng
+
+    if ((alias = search(al, tmp)) != NULL) // Check if command is an alias for an other command
+        strcpy(str, alias->cmd);
+    free(tmp);
+
     int i = 0, last = 0, j = 0, count = 0;
     char *cp, **tokens = malloc(TOKEN_NUM * sizeof(char *));
     bool flag = false;
+    char *copy = malloc(strlen(str) * sizeof(char) + 1);
+    strcpy(copy, str);
     for (int i = 0; i < strlen(copy); i++)
         if (copy[i] == '\"')
             count++;
@@ -262,7 +268,7 @@ char **tokenize(char *copy)
     }
     free(cp);
     free(copy);
-    return tokens;
+    return wild(tokens);
 }
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag)
 {
@@ -373,8 +379,35 @@ void frees(char *str, char *copy, char **tokens, char *s)
     exit(EXIT_FAILURE);
 }
 
-char **wild(char **argv, char **tokens)
+char **wild(char **tokens)
 {
+    glob_t globbuf;
+    int flags = GLOB_NOCHECK | GLOB_TILDE, j = 0;
+    char **args = malloc(TOKEN_NUM * sizeof(char *));
+    for (int i = 0; i < TOKEN_NUM; i++)
+        args[i] = NULL;
+    args[j++] = tokens[0];
+    for (int i = 1; tokens[i] != NULL; i++)
+    {
+        if (strchr(tokens[i], '*') != NULL || strchr(tokens[i], '?') != NULL)
+        {
+
+            if (glob(tokens[i], flags, NULL, &globbuf) == 0)
+            {
+                for (size_t i = 0; i < globbuf.gl_pathc; i++)
+                {
+                    args[j] = malloc(strlen(globbuf.gl_pathv[i]) * sizeof(char) + 1);
+                    strcpy(args[j++], globbuf.gl_pathv[i]);
+                }
+                globfree(&globbuf);
+                free(tokens[i]);
+            }
+        }
+        else
+            args[j++] = tokens[i];
+    }
+    free(tokens);
+    return args;
 }
 
 int hs_al(char **tokens, ptr *(hs), alr *al)
@@ -383,19 +416,42 @@ int hs_al(char **tokens, ptr *(hs), alr *al)
     if (!strcmp(tokens[0], "history"))
     {
         if (tokens[1] == NULL)
-        {
-            *hs = append(*hs, "history\n");
             print((*hs));
-        }
         else if (sscanf(tokens[1], "%d", &num) == 1 && tokens[2] == NULL)
-            if (num > 0 && num <= (*hs)->count)
+        {
+            if (num > 0 && num <= (*hs)->count - 1)
             {
-                printf("Getting the %dth command of the history...\n", num);
-                return 1;
+                ptr tmp = (*hs), prev = (*hs);
+                tmp->count--;
+                while (tmp->next != NULL)
+                {
+                    prev = tmp;
+                    tmp = tmp->next;
+                }
+                prev->next = NULL;
+                free(tmp);
+                return num;
             }
             else
                 printf("There is no %dth command in history...Try command \"history\" to see the command history\n", num);
-
+            ptr tmp = (*hs), prev = (*hs);
+            tmp->count--;
+            if (tmp->next == NULL)
+            {
+                free(tmp);
+                *hs = NULL;
+            }
+            else
+            {
+                while (tmp->next != NULL)
+                {
+                    prev = tmp;
+                    tmp = tmp->next;
+                }
+                prev->next = NULL;
+                free(tmp);
+            }
+        }
         else
             printf("Bad syntax of command \"history\".\nTry \"history\" or \"history <num>\" where num is in number in the range of 1..20\n");
     }
@@ -423,6 +479,6 @@ int hs_al(char **tokens, ptr *(hs), alr *al)
             printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
     }
     else
-        return 0;
-    return -1;
+        return -1;
+    return 0;
 }
