@@ -33,8 +33,7 @@ int main(char *argc, char **argv)
       printf("in-mysh-now:> ");
       continue;
     }
-    num = hs_al(tokens, &hs, &al);
-    if (num > 0)
+    while ((num = hs_al(tokens, &hs, &al)) > 0)
     {
       strcpy(str, get_command(hs, num));
       printf("%s", str);
@@ -59,9 +58,6 @@ int main(char *argc, char **argv)
       printf("Expected command after last pipe |\n");
       exit(0);
     }
-    // for (int i = 0; i < TOKEN_NUM; i++)
-    //   if (args[i] != NULL)
-    //     printf("%s\n", args[i]);
     if (!strcmp(tokens[0], "exit"))
     {
       printf("You are exiting mysh!\n");
