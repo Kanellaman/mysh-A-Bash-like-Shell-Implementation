@@ -37,5 +37,5 @@ alr delal(alr al,char *alias);
 alr in(alr al, char *alias, char *cmd);
 alr search(alr al, char *alias);
 void dele(alr al);
-int hs_al(char **tokens, ptr *hs, alr *al);
+int hs_al(char **tokens, ptr *hs, alr *al,char **str);
 char **wild(char **tokens,glob_t *globbuf);

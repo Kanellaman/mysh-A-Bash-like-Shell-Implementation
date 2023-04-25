@@ -86,9 +86,7 @@ alr in(alr al, char *alias, char *cmd)
         return head;
     }
     while (al->next != NULL)
-    {
         al = al->next;
-    }
     al->next = malloc(sizeof(struct alias));
     strcpy(al->next->alias, alias);
     strcpy(al->next->cmd, cmd);
@@ -154,16 +152,26 @@ void dele(alr al)
 char **tokenize(char *str, alr al, glob_t *globbuf)
 {
     alr alias;
-    char *tmp = malloc(strlen(str) * sizeof(char) + 1);
-    strcpy(tmp, str);
-    tmp[strlen(tmp) - 1] = '\0'; // Filter out the '\n' character of the stirng
-
-    if ((alias = search(al, tmp)) != NULL) // Check if command is an alias for an other command
-        strcpy(str, alias->cmd);
-    free(tmp);
+    char *tmp = NULL;
+    if (str[strlen(str) - 1] == '\n')
+    {
+        tmp = malloc(strlen(str) * sizeof(char) + 1);
+        strcpy(tmp, str);
+        tmp[strlen(tmp) - 1] = '\0';           // Filter out the '\n' character of the stirng
+        if ((alias = search(al, tmp)) != NULL) // Check if command is an alias for an other command
+            strcpy(str, alias->cmd);
+        free(tmp);
+    }
+    else
+    {
+        if ((alias = search(al, str)) != NULL) // Check if command is an alias for an other command
+            strcpy(str, alias->cmd);
+    }
 
     int i = 0, last = 0, j = 0, count = 0;
     char *cp, **tokens = malloc(TOKEN_NUM * sizeof(char *));
+    for (int i = 0; i < TOKEN_NUM; i++)
+        tokens[i] = NULL;
     bool flag = false;
     char *copy = malloc(strlen(str) * sizeof(char) + 1);
     strcpy(copy, str);
@@ -333,8 +341,9 @@ int redirection(char **tokens)
     int i = 0, fd, dsc;
     while (tokens[i] != NULL)
     {
-        if (!strcmp(tokens[i], "<") || !strcmp(tokens[i], ">"))
+        if (!strcmp(tokens[i], "<") || !strcmp(tokens[i], ">") || !strcmp(tokens[i], ">>"))
         {
+            dsc = STDOUT_FILENO;
             char *file = tokens[i + 1];
             if (file == NULL)
             {
@@ -347,23 +356,17 @@ int redirection(char **tokens)
                 fd = open(file, O_RDONLY);
             }
             else if (!strcmp(tokens[i], ">"))
-            {
-                dsc = STDOUT_FILENO;
                 fd = open(file, O_WRONLY | O_TRUNC | O_CREAT, 0644);
-            }
-            else
-            {
-                dsc = STDOUT_FILENO;
+            else if (!strcmp(tokens[i], ">>"))
                 fd = open(file, O_WRONLY | O_APPEND | O_CREAT, 0644);
-            }
             if (fd == -1)
             {
                 perror("open");
-                exit(0);
+                return -1;
             }
             close(dsc);
             if (dup2(fd, dsc) == -1)
-                exit(0);
+                return -1;
             close(fd);
         }
         i++;
@@ -385,8 +388,7 @@ char **wild(char **tokens, glob_t *globbuf)
     char **args = malloc(TOKEN_NUM * sizeof(char *));
     for (int i = 0; i < TOKEN_NUM; i++)
         args[i] = NULL;
-    args[j++] = tokens[0];
-    for (int i = 1; tokens[i] != NULL; i++)
+    for (int i = 0; tokens[i] != NULL; i++)
     {
         if (strchr(tokens[i], '*') != NULL || strchr(tokens[i], '?') != NULL)
         {
@@ -409,10 +411,11 @@ char **wild(char **tokens, glob_t *globbuf)
     return args;
 }
 
-int hs_al(char **tokens, ptr *(hs), alr *al)
+int hs_al(char **tokens, ptr *(hs), alr *al, char **str)
 {
+    alr alias;
     int num;
-    if (!strcmp(tokens[0], "history"))
+    if (!strcmp(tokens[0], "history") && tokens[1] != NULL)
     {
         if (tokens[1] == NULL)
             print((*hs));
@@ -429,6 +432,8 @@ int hs_al(char **tokens, ptr *(hs), alr *al)
                 }
                 prev->next = NULL;
                 free(tmp);
+                strcpy(*str, get_command(*hs, num));
+
                 return num;
             }
             else
@@ -454,30 +459,36 @@ int hs_al(char **tokens, ptr *(hs), alr *al)
         else
             printf("Bad syntax of command \"history\".\nTry \"history\" or \"history <num>\" where num is in number in the range of 1..20\n");
     }
-    else if (!strcmp(tokens[0], "createalias"))
+    else if (!strcmp(tokens[0], "createalias") && tokens[1] != NULL)
     {
         if (tokens[3] != NULL && tokens[2][0] == '\"')
         {
-            alr tmp;
+            alr tmp = NULL;
             char *cmd = malloc((LINE_SIZE / 2));
             strncpy(cmd, tokens[2] + 1, strlen(tokens[2]) - 2);
             cmd[strlen(tokens[2]) - 1] = '\0';
             tmp = in(*al, tokens[1], cmd);
             if (tmp != NULL)
                 *al = tmp;
+            printf("NAI?");
             free(cmd);
         }
         else
             printf("Bad syntax of command \"createalias\".\nTry createalias <alias> \"command to alias\";\n");
     }
-    else if (!strcmp(tokens[0], "destroyalias"))
+    else if (!strcmp(tokens[0], "destroyalias") && tokens[1] != NULL)
     {
         if (tokens[2] != NULL)
             *al = delal(*al, tokens[1]);
         else
             printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
     }
+    else if ((alias = search(*al, tokens[0])) != NULL && tokens[1] == NULL) // Check if command is an alias for an other command
+    {
+        strcpy(*str, alias->cmd);
+        return 0;
+    }
     else
-        return -1;
-    return 0;
+        return -2;
+    return -1;
 }
