@@ -24,7 +24,7 @@ struct alias
     struct alias *next;
 };
 void frees(char *str, char *copy, char **tokens, char *s);
-char **tokenize(char *str,alr al,glob_t *globbuf);
+char **tokenize(char *str,glob_t *globbuf);
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j,bool *flag);
 int cd(char **tokens);
 int find(char **tokens, char *redir);

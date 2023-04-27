@@ -149,25 +149,8 @@ void dele(alr al)
     }
     free(al);
 }
-char **tokenize(char *str, alr al, glob_t *globbuf)
+char **tokenize(char *str, glob_t *globbuf)
 {
-    alr alias;
-    char *tmp = NULL;
-    if (str[strlen(str) - 1] == '\n')
-    {
-        tmp = malloc(strlen(str) * sizeof(char) + 1);
-        strcpy(tmp, str);
-        tmp[strlen(tmp) - 1] = '\0';           // Filter out the '\n' character of the stirng
-        if ((alias = search(al, tmp)) != NULL) // Check if command is an alias for an other command
-            strcpy(str, alias->cmd);
-        free(tmp);
-    }
-    else
-    {
-        if ((alias = search(al, str)) != NULL) // Check if command is an alias for an other command
-            strcpy(str, alias->cmd);
-    }
-
     int i = 0, last = 0, j = 0, count = 0;
     char *cp, **tokens = malloc(TOKEN_NUM * sizeof(char *));
     for (int i = 0; i < TOKEN_NUM; i++)
@@ -181,12 +164,17 @@ char **tokenize(char *str, alr al, glob_t *globbuf)
     if (count % 2 != 0)
     {
         printf("There is \" that never closes\nSyntax error\n");
-        exit(0);
+        free(copy);
+        return NULL;
     }
 
     cp = strtok(copy, " \n");
     if (cp == NULL)
+    {
+        free(cp);
+        free(copy);
         return NULL;
+    }
     else if (cp[0] == '"')
     {
         tokens[i] = malloc(LINE_SIZE * sizeof(char) + 1);
@@ -411,15 +399,15 @@ char **wild(char **tokens, glob_t *globbuf)
     return args;
 }
 
-int hs_al(char **tokens, ptr *(hs), alr *al, char **str)
+int hs_al(char **tokens, ptr *hs, alr *al, char **str)
 {
     alr alias;
     int num;
-    if (!strcmp(tokens[0], "history") && tokens[1] != NULL)
+    if (!strcmp(tokens[0], "history"))
     {
-        if (tokens[1] == NULL)
+        if (tokens[1] == NULL || (!strcmp(tokens[1], "|") || !strcmp(tokens[1], ";") || !strcmp(tokens[1], "&")))
             print((*hs));
-        else if (sscanf(tokens[1], "%d", &num) == 1 && tokens[2] == NULL)
+        else if (sscanf(tokens[1], "%d", &num) == 1 && (tokens[2] == NULL || (!strcmp(tokens[2], "|") || !strcmp(tokens[2], ";") || !strcmp(tokens[2], "&"))))
         {
             if (num > 0 && num <= (*hs)->count - 1)
             {
@@ -459,9 +447,9 @@ int hs_al(char **tokens, ptr *(hs), alr *al, char **str)
         else
             printf("Bad syntax of command \"history\".\nTry \"history\" or \"history <num>\" where num is in number in the range of 1..20\n");
     }
-    else if (!strcmp(tokens[0], "createalias") && tokens[1] != NULL)
+    else if (!strcmp(tokens[0], "createalias"))
     {
-        if (tokens[3] != NULL && tokens[2][0] == '\"')
+        if (tokens[1] != NULL && tokens[2] != NULL && tokens[2][0] == '\"' && (tokens[3] == NULL || (!strcmp(tokens[3], "|") || !strcmp(tokens[3], ";") || !strcmp(tokens[3], "&"))))
         {
             alr tmp = NULL;
             char *cmd = malloc((LINE_SIZE / 2));
@@ -470,22 +458,29 @@ int hs_al(char **tokens, ptr *(hs), alr *al, char **str)
             tmp = in(*al, tokens[1], cmd);
             if (tmp != NULL)
                 *al = tmp;
-            printf("NAI?");
             free(cmd);
         }
         else
             printf("Bad syntax of command \"createalias\".\nTry createalias <alias> \"command to alias\";\n");
     }
-    else if (!strcmp(tokens[0], "destroyalias") && tokens[1] != NULL)
+    else if (!strcmp(tokens[0], "destroyalias"))
     {
         if (tokens[2] != NULL)
             *al = delal(*al, tokens[1]);
         else
             printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
     }
-    else if ((alias = search(*al, tokens[0])) != NULL && tokens[1] == NULL) // Check if command is an alias for an other command
+    else if ((alias = search(*al, tokens[0])) != NULL && (tokens[1] == NULL || (!strcmp(tokens[1], "|") || !strcmp(tokens[1], ";") || !strcmp(tokens[1], "&")))) // Check if command is an alias for an other command
     {
         strcpy(*str, alias->cmd);
+        strcat(*str, " ");
+        int i = 1;
+        while (tokens[i] != NULL)
+        {
+            strcat(*str, tokens[i++]);
+            strcat(*str, " ");
+        }
+        strcat(*str, "\n");
         return 0;
     }
     else

@@ -13,33 +13,36 @@ int main(char *argc, char **argv)
   int flags = GLOB_NOCHECK | GLOB_TILDE;
   while (i != 0 && fgets(str, LINE_SIZE, stdin) != NULL)
   {
-    if (tokens != NULL)
-    {
-      for (int i = 0; i < TOKEN_NUM; i++)
-        if (tokens[i] != NULL)
-        {
-          free(tokens[i]);
-          tokens[i] = NULL;
-        }
-      free(tokens);
-      tokens = NULL;
-      free(tok);
-      tok = NULL;
-    }
     if (tok != NULL)
     {
-      for (int i = 0; total != 1 && i < total; i++)
-        free(tok[i]);
+      for (int j = 0; j < total; j++)
+      {
+        if (tok[j] != NULL)
+        {
+          for (int i = 0; i < TOKEN_NUM; i++)
+            if (tok[j][i] != NULL)
+            {
+              free(tok[j][i]);
+              tok[j][i] = NULL;
+            }
+            else
+              break;
+          free(tok[j]);
+          tok[j] = NULL;
+        }
+      }
       free(tok);
+      tok = NULL;
     }
     total = 0;
     hs = append(hs, str);
 
-    tokens = tokenize(str, al, &globbuf);
+    tokens = tokenize(str, &globbuf);
 
     if (tokens == NULL)
     {
-      printf("sdfin-mysh-now:> ");
+      free(tokens);
+      printf("in-mysh-now:> ");
       continue;
     }
     int p = 0, pipes = 0, pun = 0, amper = 0;
@@ -57,7 +60,6 @@ int main(char *argc, char **argv)
       }
       p++;
     }
-
     total = pipes + pun + amper;
     if (!strcmp(tokens[p - 1], "|"))
     {
@@ -78,11 +80,16 @@ int main(char *argc, char **argv)
           tok[j][x] = tokens[i];
           tok[j] = realloc(tok[j], (2 + x) * sizeof(char **));
           tok[j][++x] = NULL;
-          if (!flag && tokens[i + 1] != NULL && !strcmp(tokens[i + 1], ";"))
-            i++;
-          x = 0;
           if (tokens[i + 1] == NULL)
             break;
+          if (!flag && !strcmp(tokens[i + 1], ";"))
+          {
+            i++;
+            free(tokens[i]);
+            if (tokens[i + 1] == NULL)
+              break;
+          }
+          x = 0;
           j++;
           tok = realloc(tok, (j + 1) * sizeof(char **));
           tok[j] = malloc(sizeof(char *));
@@ -100,24 +107,27 @@ int main(char *argc, char **argv)
       tok = malloc(sizeof(char **));
       tok[0] = tokens;
     }
+    else
+      free(tokens);
 
     for (int j = 0; j < total; j++)
     {
       while ((num = hs_al(tok[j], &hs, &al, &str)) >= 0)
       {
         for (int i = 0; i < TOKEN_NUM; i++)
-          if (tokens[i] != NULL)
+          if (tok[j][i] != NULL)
           {
-            free(tokens[i]);
-            tokens[i] = NULL;
+            free(tok[j][i]);
+            tok[j][i] = NULL;
           }
-        free(tokens);
-        tokens = NULL;
-        hs = append(hs, str);
-        tokens = tokenize(str, al, &globbuf);
-        tok[j] = tokens;
+          else
+            break;
+        free(tok[j]);
+        tok[j] = NULL;
+        if (num > 0 && total == 1)
+          hs = append(hs, str);
+        tok[j] = tokenize(str, &globbuf);
       }
-      printf("%s", tok[j][0]);
       if (!strcmp(tok[j][0], "exit"))
       {
         printf("You are exiting mysh!\n");
@@ -135,6 +145,7 @@ int main(char *argc, char **argv)
         pid = fork();
         if (pid == 0)
         {
+
           char **args = malloc(TOKEN_NUM * sizeof(char *));
 
           for (int i = 0; i < TOKEN_NUM; i++)
@@ -180,14 +191,23 @@ int main(char *argc, char **argv)
     if (i != 0)
       printf("in-mysh-now:> ");
   }
-  for (int i = 0; i < TOKEN_NUM; i++)
-    if (tokens[i] != NULL)
-      free(tokens[i]);
-  free(tokens);
   if (tok != NULL)
   {
-    for (int i = 0; total != 1 && i < total; i++)
-      free(tok[i]);
+    for (int j = 0; j < total; j++)
+    {
+      if (tok[j] != NULL)
+      {
+        for (int i = 0; i < TOKEN_NUM; i++)
+          if (tok[j][i] != NULL)
+          {
+            free(tok[j][i]);
+            tok[j][i] = NULL;
+          }
+          else
+            break;
+        free(tok[j]);
+      }
+    }
     free(tok);
   }
   free(str);

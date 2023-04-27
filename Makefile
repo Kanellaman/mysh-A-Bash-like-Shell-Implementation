@@ -4,9 +4,6 @@ CC = gcc
 #.c files
 Files = mysh.c functions.c
 
-#.o Files
-OBJS = mysh.o functions.o
-
 #Executable
 EXEC = mysh
 
@@ -35,4 +32,4 @@ memory:
 
 #Clear
 clean:
-	rm -f $(EXEC) 	
+	rm -f $(EXEC)
