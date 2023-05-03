@@ -1,43 +1,45 @@
 #include "Interface.h"
 
+pid_t bgpg = 0, fg = 0;
+void sig_handler(int sig)
+{
+  if (sig == SIGINT)
+    if (fg && killpg(-fg, sig) == -1)
+    { // Send the signal to the job's process group
+      perror("killpg");
+      exit(EXIT_FAILURE);
+    }
+
+  if (sig == SIGTSTP)
+  {
+    if (fg && killpg(-fg, sig) == -1)
+    { // Send the signal to the job's process group
+      perror("killpg");
+      exit(EXIT_FAILURE);
+    }
+  }
+}
 int main(char *argc, char **argv)
 {
+  char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
+  int pid, i = 1, num = -5, total = 0, status;
   ptr hs = NULL;
   alr al = NULL;
-  int opt;
-  char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
+  signal(SIGINT, sig_handler);
+  signal(SIGTSTP, sig_handler);
+  signal(SIGTTOU, SIG_IGN);
+  signal(SIGTTIN, SIG_IGN);
+  setpgid(0, getpid());
+  tcsetpgrp(0, getpid());
   printf("in-mysh-now:> ");
-  int pid, ff = 0, i = 1, num = -5, total = 0;
-  char *copy = NULL;
-  glob_t globbuf;
-  int flags = GLOB_NOCHECK | GLOB_TILDE;
   while (i != 0 && fgets(str, LINE_SIZE, stdin) != NULL)
   {
-    if (tok != NULL)
-    {
-      for (int j = 0; j < total; j++)
-      {
-        if (tok[j] != NULL)
-        {
-          for (int i = 0; i < TOKEN_NUM; i++)
-            if (tok[j][i] != NULL)
-            {
-              free(tok[j][i]);
-              tok[j][i] = NULL;
-            }
-            else
-              break;
-          free(tok[j]);
-          tok[j] = NULL;
-        }
-      }
-      free(tok);
-      tok = NULL;
-    }
+    waitpid(-1, &status, WNOHANG);
+
+    tok = frees(tok, total);
     total = 0;
     hs = append(hs, str);
-
-    tokens = tokenize(str, &globbuf);
+    tokens = tokenize(str);
 
     if (tokens == NULL)
     {
@@ -109,7 +111,8 @@ int main(char *argc, char **argv)
     }
     else
       free(tokens);
-
+    int output, input = 0;
+    int fds[2], coun = 0;
     for (int j = 0; j < total; j++)
     {
       while ((num = hs_al(tok[j], &hs, &al, &str)) >= 0)
@@ -126,8 +129,9 @@ int main(char *argc, char **argv)
         tok[j] = NULL;
         if (num > 0 && total == 1)
           hs = append(hs, str);
-        tok[j] = tokenize(str, &globbuf);
+        tok[j] = tokenize(str);
       }
+
       if (!strcmp(tok[j][0], "exit"))
       {
         printf("You are exiting mysh!\n");
@@ -140,76 +144,125 @@ int main(char *argc, char **argv)
           perror("cd");
         continue;
       }
-      if (num != -1)
+      if (num == -1)
+        continue;
+      int last = -1;
+      while (tok[j][++last] != NULL)
+        ;
+      int status;
+      pid_t pid, pgid;
+      if (!strcmp(tok[j][last - 1], "|"))
       {
-        pid = fork();
-        if (pid == 0)
+        pipe(fds);
+        output = fds[1];
+        p = 1;
+      }
+      else
+      {
+        output = 1;
+        p = 0;
+      }
+      pid = fork();
+      if (pid == 0)
+      {
+        if (input)
         {
+          dup2(input, 0);
+          close(input);
+        }
+        if (output != 1)
+        {
+          dup2(output, 1);
+          close(output);
+          close(fds[0]);
+        }
+        if (!strcmp(tok[j][last - 1], "&"))
+          setpgid(pid, bgpg);
+        else
+        {
+          if (!fg)
+            fg = pid;
+          setpgid(getpid(), fg);
+          tcsetpgrp(0, fg);
+        }
+        char **args = malloc(TOKEN_NUM * sizeof(char *));
 
-          char **args = malloc(TOKEN_NUM * sizeof(char *));
-
-          for (int i = 0; i < TOKEN_NUM; i++)
-            args[i] = NULL;
-          if (redirection(tok[j]) == -1)
-            return -1;
-          int i = 0, x = 0;
-          while (tok[j][i] != NULL)
+        for (int i = 0; i < TOKEN_NUM; i++)
+          args[i] = NULL;
+        if (redirection(tok[j]) == -1)
+          return -1;
+        int i = 0, x = 0;
+        while (tok[j][i] != NULL)
+        {
+          if (!strcmp(tok[j][i], "<") || !strcmp(tok[j][i], ">") || !strcmp(tok[j][i], ">>"))
           {
-            if (!strcmp(tok[j][i], "<") || !strcmp(tok[j][i], ">") || !strcmp(tok[j][i], ">>"))
-            {
-              i += 2;
-              continue;
-            }
-            if (!strcmp(tok[j][i], ";") || !strcmp(tok[j][i], "|") || !strcmp(tok[j][i], "&"))
-            {
-              i++;
-              continue;
-            }
-            if (tok[j][i][0] == '\"')
-            {
-              args[x] = malloc(strlen(tok[j][i]) * sizeof(char) - 1);
-              strncpy(args[x], tok[j][i] + 1, strlen(tok[j][i]) - 2);
-              args[x++][strlen(tok[j][i++]) - 1] = '\0';
-              continue;
-            }
-            args[x] = malloc(strlen(tok[j][i]) * sizeof(char) + 1);
-            strcpy(args[x++], tok[j][i++]);
+            i += 2;
+            continue;
           }
-
-          int error = execvp(args[0], args);
-          if (error == -1)
+          if (!strcmp(tok[j][i], ";") || !strcmp(tok[j][i], "|") || !strcmp(tok[j][i], "&"))
           {
-            perror("Execvp");
-            printf("Check if '%s' is a valid command or alias\n", tok[j][0]);
+            i++;
+            continue;
           }
-          exit(0); // In case execvp returns with an error
+          if (tok[j][i][0] == '\"')
+          {
+            args[x] = malloc(strlen(tok[j][i]) * sizeof(char) - 1);
+            strncpy(args[x], tok[j][i] + 1, strlen(tok[j][i]) - 2);
+            args[x++][strlen(tok[j][i++]) - 1] = '\0';
+            continue;
+          }
+          args[x] = malloc(strlen(tok[j][i]) * sizeof(char) + 1);
+          strcpy(args[x++], tok[j][i++]);
+        }
+
+        int error = execvp(args[0], args);
+        if (error == -1)
+        {
+          perror("Execvp");
+          printf("Check if '%s' is a valid command or alias\n", tok[j][0]);
+        }
+        return 0; // In case execvp returns with an error
+      }
+      else
+      {
+        if (output != 1)
+          close(output);
+        if (input != 0)
+          close(input);
+        input = fds[0];
+        if (strcmp(tok[j][last - 1], "&"))
+        {
+          if (!fg)
+            fg = pid;
+          setpgid(pid, fg);
+          tcsetpgrp(0, fg);
+          if (strcmp(tok[j][last - 1], "|") && !coun)
+          {
+            waitpid(fg, &status, WUNTRACED);
+            fg = 0;
+          }
+          else if (strcmp(tok[j][last - 1], "|") && coun)
+          {
+            waitpid(pid, &status, WUNTRACED);
+            coun = 0;
+            fg = 0;
+          }
+          else
+            coun++;
+          tcsetpgrp(0, getpid());
         }
         else
-          wait(NULL);
+        {
+          if (!bgpg)
+            bgpg = pid;
+          setpgid(pid, bgpg);
+        }
       }
     }
     if (i != 0)
       printf("in-mysh-now:> ");
   }
-  if (tok != NULL)
-  {
-    for (int j = 0; j < total; j++)
-    {
-      if (tok[j] != NULL)
-      {
-        for (int i = 0; i < TOKEN_NUM; i++)
-          if (tok[j][i] != NULL)
-          {
-            free(tok[j][i]);
-            tok[j][i] = NULL;
-          }
-          else
-            break;
-        free(tok[j]);
-      }
-    }
-    free(tok);
-  }
+  tok = frees(tok, total);
   free(str);
   del(hs);
   dele(al);

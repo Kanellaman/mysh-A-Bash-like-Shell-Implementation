@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <glob.h>
+#include <signal.h>
+#include <sys/types.h>
 
 #define LINE_SIZE 1024
 #define TOKEN_NUM 50
@@ -23,8 +25,8 @@ struct alias
     char alias[LINE_SIZE/2],cmd[LINE_SIZE/2];
     struct alias *next;
 };
-void frees(char *str, char *copy, char **tokens, char *s);
-char **tokenize(char *str,glob_t *globbuf);
+char ***frees(char ***tokens,int total);
+char **tokenize(char *str);
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j,bool *flag);
 int cd(char **tokens);
 int find(char **tokens, char *redir);
@@ -38,4 +40,4 @@ alr in(alr al, char *alias, char *cmd);
 alr search(alr al, char *alias);
 void dele(alr al);
 int hs_al(char **tokens, ptr *hs, alr *al,char **str);
-char **wild(char **tokens,glob_t *globbuf);
+char **wild(char **tokens);

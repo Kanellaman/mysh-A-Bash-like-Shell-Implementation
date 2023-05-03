@@ -149,7 +149,7 @@ void dele(alr al)
     }
     free(al);
 }
-char **tokenize(char *str, glob_t *globbuf)
+char **tokenize(char *str)
 {
     int i = 0, last = 0, j = 0, count = 0;
     char *cp, **tokens = malloc(TOKEN_NUM * sizeof(char *));
@@ -264,7 +264,7 @@ char **tokenize(char *str, glob_t *globbuf)
     }
     free(cp);
     free(copy);
-    return wild(tokens, globbuf);
+    return wild(tokens);
 }
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag)
 {
@@ -362,16 +362,35 @@ int redirection(char **tokens)
     // return 0;
 }
 
-void frees(char *str, char *copy, char **tokens, char *s)
+char ***frees(char ***tok, int total)
 {
-    perror(s);
-    free(str);
-    free(tokens);
-    exit(EXIT_FAILURE);
+    if (tok != NULL)
+    {
+        for (int j = 0; j < total; j++)
+        {
+            if (tok[j] != NULL)
+            {
+                for (int i = 0; i < TOKEN_NUM; i++)
+                    if (tok[j][i] != NULL)
+                    {
+                        free(tok[j][i]);
+                        tok[j][i] = NULL;
+                    }
+                    else
+                        break;
+                free(tok[j]);
+                tok[j] = NULL;
+            }
+        }
+        free(tok);
+        tok = NULL;
+    }
+    return tok;
 }
 
-char **wild(char **tokens, glob_t *globbuf)
+char **wild(char **tokens)
 {
+    glob_t globbuf;
     int flags = GLOB_NOCHECK | GLOB_TILDE, j = 0;
     char **args = malloc(TOKEN_NUM * sizeof(char *));
     for (int i = 0; i < TOKEN_NUM; i++)
@@ -381,14 +400,14 @@ char **wild(char **tokens, glob_t *globbuf)
         if (strchr(tokens[i], '*') != NULL || strchr(tokens[i], '?') != NULL)
         {
 
-            if (glob(tokens[i], flags, NULL, globbuf) == 0)
+            if (glob(tokens[i], 0, NULL, &globbuf) == 0)
             {
-                for (size_t i = 0; i < globbuf->gl_pathc; i++)
+                for (size_t i = 0; i < globbuf.gl_pathc; i++)
                 {
-                    args[j] = malloc(strlen(globbuf->gl_pathv[i]) * sizeof(char) + 1);
-                    strcpy(args[j++], globbuf->gl_pathv[i]);
+                    args[j] = malloc(strlen(globbuf.gl_pathv[i]) * sizeof(char) + 1);
+                    strcpy(args[j++], globbuf.gl_pathv[i]);
                 }
-                globfree(globbuf);
+                globfree(&globbuf);
                 free(tokens[i]);
             }
         }
@@ -407,7 +426,7 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
     {
         if (tokens[1] == NULL || (!strcmp(tokens[1], "|") || !strcmp(tokens[1], ";") || !strcmp(tokens[1], "&")))
             print((*hs));
-        else if (sscanf(tokens[1], "%d", &num) == 1 && (tokens[2] == NULL || (!strcmp(tokens[2], "|") || !strcmp(tokens[2], ";") || !strcmp(tokens[2], "&"))))
+        else if (sscanf(tokens[1], "%d", &num) == 1)
         {
             if (num > 0 && num <= (*hs)->count - 1)
             {
@@ -421,7 +440,14 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
                 prev->next = NULL;
                 free(tmp);
                 strcpy(*str, get_command(*hs, num));
-
+                strcat(*str, " ");
+                int i = 2;
+                while (tokens[i] != NULL)
+                {
+                    strcat(*str, tokens[i++]);
+                    strcat(*str, " ");
+                }
+                strcat(*str, "\n");
                 return num;
             }
             else
@@ -470,7 +496,7 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
         else
             printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
     }
-    else if ((alias = search(*al, tokens[0])) != NULL && (tokens[1] == NULL || (!strcmp(tokens[1], "|") || !strcmp(tokens[1], ";") || !strcmp(tokens[1], "&")))) // Check if command is an alias for an other command
+    else if ((alias = search(*al, tokens[0])) != NULL) // Check if command is an alias for an other command
     {
         strcpy(*str, alias->cmd);
         strcat(*str, " ");
