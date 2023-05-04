@@ -50,8 +50,9 @@ int main(char *argc, char **argv)
   printf("in-mysh-now:> ");
   while (i != 0 && fgets(str, LINE_SIZE, stdin) != NULL)
   {
-    waitpid(-1, &status, WNOHANG);
-
+    int child = waitpid(-1, &status, WNOHANG);
+    if (child > 0)
+      printf("\n            Process with pid %d terminated\n\n", child);
     tok = frees(tok, total);
     total = 0;
     tokens = tokenize(str);
@@ -228,9 +229,18 @@ int main(char *argc, char **argv)
           tcsetpgrp(0, fg);
           if (strcmp(tok[j][last - 1], "|"))
           {
-            pid_t p = 0;
-            while ((waitpid(-fg, &status, WUNTRACED) != -1 || errno != ECHILD) && errno == EINTR)
-              ;
+            while (1)
+            {
+              pid_t pid = waitpid(-fg, &status, WUNTRACED | WCONTINUED);
+              if (pid == -1)
+                // No more child processes
+                if (errno == ECHILD)
+                  break;
+
+              // Process was interrupted or terminated by a signal
+              if (WIFSTOPPED(status) || WIFSIGNALED(status))
+                break;
+            }
             fg = 0;
           }
           tcsetpgrp(0, getpid());
