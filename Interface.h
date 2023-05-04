@@ -41,3 +41,4 @@ alr search(alr al, char *alias);
 void dele(alr al);
 int hs_al(char **tokens, ptr *hs, alr *al,char **str);
 char **wild(char **tokens);
+char **cleanup(char **tokens);

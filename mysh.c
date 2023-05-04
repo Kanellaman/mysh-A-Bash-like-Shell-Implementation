@@ -185,36 +185,34 @@ int main(char *argc, char **argv)
           setpgid(getpid(), fg);
           tcsetpgrp(0, fg);
         }
-        char **args = malloc(TOKEN_NUM * sizeof(char *));
+        char **args;
 
-        for (int i = 0; i < TOKEN_NUM; i++)
-          args[i] = NULL;
         if (redirection(tok[j]) == -1)
-          return -1;
-        int i = 0, x = 0;
-        while (tok[j][i] != NULL)
-        {
-          if (!strcmp(tok[j][i], "<") || !strcmp(tok[j][i], ">") || !strcmp(tok[j][i], ">>"))
-          {
-            i += 2;
-            continue;
-          }
-          if (!strcmp(tok[j][i], ";") || !strcmp(tok[j][i], "|") || !strcmp(tok[j][i], "&"))
-          {
-            i++;
-            continue;
-          }
-          if (tok[j][i][0] == '\"')
-          {
-            args[x] = malloc(strlen(tok[j][i]) * sizeof(char) - 1);
-            strncpy(args[x], tok[j][i] + 1, strlen(tok[j][i]) - 2);
-            args[x++][strlen(tok[j][i++]) - 1] = '\0';
-            continue;
-          }
-          args[x] = malloc(strlen(tok[j][i]) * sizeof(char) + 1);
-          strcpy(args[x++], tok[j][i++]);
-        }
-
+          return 0;
+        // int i = 0, x = 0;
+        // while (tok[j][i] != NULL)
+        // {
+        //   if (!strcmp(tok[j][i], "<") || !strcmp(tok[j][i], ">") || !strcmp(tok[j][i], ">>"))
+        //   {
+        //     i += 2;
+        //     continue;
+        //   }
+        //   if (!strcmp(tok[j][i], ";") || !strcmp(tok[j][i], "|") || !strcmp(tok[j][i], "&"))
+        //   {
+        //     i++;
+        //     continue;
+        //   }
+        //   if (tok[j][i][0] == '\"')
+        //   {
+        //     args[x] = malloc(strlen(tok[j][i]) * sizeof(char) - 1);
+        //     strncpy(args[x], tok[j][i] + 1, strlen(tok[j][i]) - 2);
+        //     args[x++][strlen(tok[j][i++]) - 1] = '\0';
+        //     continue;
+        //   }
+        //   args[x] = malloc(strlen(tok[j][i]) * sizeof(char) + 1);
+        //   strcpy(args[x++], tok[j][i++]);
+        // }
+        args = cleanup(tok[j]);
         int error = execvp(args[0], args);
         if (error == -1)
         {
@@ -243,7 +241,11 @@ int main(char *argc, char **argv)
           }
           else if (strcmp(tok[j][last - 1], "|") && coun)
           {
-            waitpid(pid, &status, WUNTRACED);
+            pid_t p = 0;
+            while (p != -1)
+            {
+              p = waitpid(-fg, &status, WUNTRACED);
+            }
             coun = 0;
             fg = 0;
           }

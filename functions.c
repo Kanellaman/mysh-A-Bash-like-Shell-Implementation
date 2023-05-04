@@ -354,14 +354,47 @@ int redirection(char **tokens)
             }
             close(dsc);
             if (dup2(fd, dsc) == -1)
+            {
+                perror("dup");
                 return -1;
+            }
             close(fd);
         }
         i++;
     }
     // return 0;
 }
+char **cleanup(char **tokens)
+{
+    char **args = malloc(TOKEN_NUM * sizeof(char *));
 
+    for (int i = 0; i < TOKEN_NUM; i++)
+        args[i] = NULL;
+    int i = 0, x = 0;
+    while (tokens[i] != NULL)
+    {
+        if (!strcmp(tokens[i], "<") || !strcmp(tokens[i], ">") || !strcmp(tokens[i], ">>"))
+        {
+            i += 2;
+            continue;
+        }
+        if (!strcmp(tokens[i], ";") || !strcmp(tokens[i], "|") || !strcmp(tokens[i], "&"))
+        {
+            i++;
+            continue;
+        }
+        if (tokens[i][0] == '\"')
+        {
+            args[x] = malloc(strlen(tokens[i]) * sizeof(char) - 1);
+            strncpy(args[x], tokens[i] + 1, strlen(tokens[i]) - 2);
+            args[x++][strlen(tokens[i++]) - 1] = '\0';
+            continue;
+        }
+        args[x] = malloc(strlen(tokens[i]) * sizeof(char) + 1);
+        strcpy(args[x++], tokens[i++]);
+    }
+    return args;
+}
 char ***frees(char ***tok, int total)
 {
     if (tok != NULL)
