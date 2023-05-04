@@ -1,6 +1,6 @@
 #include "Interface.h"
 
-pid_t bgpg = 0, fg = 0;
+pid_t fg = 0;
 void sig_handler(int sig)
 {
   if (sig == SIGINT)
@@ -22,12 +22,27 @@ void sig_handler(int sig)
 }
 int main(char *argc, char **argv)
 {
+  struct sigaction sa;
+  sa.sa_handler = sig_handler;
+  sa.sa_flags = SA_SIGINFO;
+  int k = 5;
   char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
+  pid_t bgpg = 0;
   int pid, i = 1, num = -5, total = 0, status;
   ptr hs = NULL;
   alr al = NULL;
-  signal(SIGINT, sig_handler);
-  signal(SIGTSTP, sig_handler);
+  if (sigaction(SIGINT, &sa, NULL) == -1)
+  {
+    perror("sigaction for SIGINT");
+    exit(EXIT_FAILURE);
+  }
+
+  if (sigaction(SIGTSTP, &sa, NULL) == -1)
+  {
+    perror("sigaction for SIGTSTP");
+    exit(EXIT_FAILURE);
+  }
+  sa.sa_handler = SIG_IGN;
   signal(SIGTTOU, SIG_IGN);
   signal(SIGTTIN, SIG_IGN);
   setpgid(0, getpid());
