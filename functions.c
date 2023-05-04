@@ -574,12 +574,7 @@ char ***separate(char ***tok, char **tokens, int *total)
         p++;
     }
     *total = pipes + pun + amper;
-    // if (!strcmp(tokens[p - 1], "|"))
-    // {
-    //     printf("Expected command after last token\n");
-    //     printf("in-mysh-now:> ");
-    //     continue;
-    // }
+    
     if (*total > 0)
     {
 

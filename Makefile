@@ -10,14 +10,12 @@ OBJS = mysh.o functions.o
 #Executable
 EXEC = mysh
 
-# Create Object files
-$(OBJS): $(Files)
-	$(CC) -c $(Files)
+
 # Create executable
-$(EXEC): $(OBJS)
+$(EXEC): $(OBJS) $(Files)
 	$(CC) $(OBJS) -o $(EXEC)
 # Run
-run: $(EXEC) $(EXEC2)
+run: $(EXEC)
 	./$(EXEC) 
 
 # Memory-loss
@@ -29,4 +27,4 @@ memory:
 
 # Clear
 clean:
-	rm -f $(EXEC)
+	rm -f $(EXEC) $(OBJS)
