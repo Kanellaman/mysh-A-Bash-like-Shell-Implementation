@@ -555,3 +555,66 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
         return -2;
     return -1;
 }
+
+char ***separate(char ***tok, char **tokens, int *total)
+{
+    int p = 0, pipes = 0, pun = 0, amper = 0;
+    while (tokens[p] != NULL)
+    {
+        if (!strcmp(tokens[p], "|"))
+            pipes++;
+        else if (!strcmp(tokens[p], ";"))
+            pun++;
+        else if (!strcmp(tokens[p], "&"))
+        {
+            if (tokens[p + 1] != NULL && !strcmp(tokens[p + 1], ";"))
+                pun--;
+            amper++;
+        }
+        p++;
+    }
+    *total = pipes + pun + amper;
+    // if (!strcmp(tokens[p - 1], "|"))
+    // {
+    //     printf("Expected command after last token\n");
+    //     printf("in-mysh-now:> ");
+    //     continue;
+    // }
+    if (*total > 0)
+    {
+
+        tok = malloc(sizeof(char **));
+        int j = 0, x = 0;
+        tok[0] = malloc(sizeof(char *));
+        for (int i = 0; i < TOKEN_NUM && tokens[i] != NULL; i++)
+        {
+            int flag = 1;
+            if (!strcmp(tokens[i], "|") || !strcmp(tokens[i], ";") || !(flag = strcmp(tokens[i], "&")))
+            {
+                tok[j][x] = tokens[i];
+                tok[j] = realloc(tok[j], (2 + x) * sizeof(char **));
+                tok[j][++x] = NULL;
+                if (tokens[i + 1] == NULL)
+                    break;
+                if (!flag && !strcmp(tokens[i + 1], ";"))
+                {
+                    i++;
+                    free(tokens[i]);
+                    if (tokens[i + 1] == NULL)
+                        break;
+                }
+                x = 0;
+                j++;
+                tok = realloc(tok, (j + 1) * sizeof(char **));
+                tok[j] = malloc(sizeof(char *));
+                continue;
+            }
+            tok[j][x] = tokens[i];
+            tok[j] = realloc(tok[j], (2 + x) * sizeof(char **));
+            tok[j][++x] = NULL;
+        }
+        *total = j + 1;
+        return tok;
+    }
+    return NULL;
+}
