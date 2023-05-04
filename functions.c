@@ -444,6 +444,15 @@ char **wild(char **tokens)
                 free(tokens[i]);
             }
         }
+        else if (tokens[i][0] == '$')
+        {
+            char *str = malloc(LINE_SIZE);
+            strncpy(str, tokens[i] + 1, strlen(tokens[i]));
+            str[strlen(str)] = '\0';
+            args[j] = malloc(strlen(str) * sizeof(char) + 1);
+            strcpy(args[j++], getenv(str));
+            free(str);
+        }
         else
             args[j++] = tokens[i];
     }

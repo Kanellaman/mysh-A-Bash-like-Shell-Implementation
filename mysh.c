@@ -170,14 +170,9 @@ int main(char *argc, char **argv)
       {
         pipe(fds);
         output = fds[1];
-        printf("%d", output);
-        p = 1;
       }
       else if (output > -1)
-      {
         output = 1;
-        p = 0;
-      }
       pid = fork();
       if (pid == 0)
       {
@@ -186,7 +181,7 @@ int main(char *argc, char **argv)
           dup2(input, 0);
           close(input);
         }
-        if (output != 1)
+        if (output != 1 && output != -1)
         {
           dup2(output, 1);
           close(output);
@@ -199,7 +194,7 @@ int main(char *argc, char **argv)
           if (!fg)
             fg = pid;
           setpgid(getpid(), fg);
-          tcsetpgrp(0, fg);
+          tcsetpgrp(0, fg); // Reserve the terminal for input-output for you
         }
 
         if (redirection(tok[j]) == -1)
@@ -216,11 +211,12 @@ int main(char *argc, char **argv)
       }
       else
       {
-        if (output != 1)
+        if (output != 1 && output != -1)
           close(output);
         if (input != 0)
           close(input);
-        input = fds[0];
+        if (!strcmp(tok[j][last - 1], "|"))
+          input = fds[0];
         if (strcmp(tok[j][last - 1], "&"))
         {
           if (!fg)
@@ -233,17 +229,18 @@ int main(char *argc, char **argv)
             {
               pid_t pid = waitpid(-fg, &status, WUNTRACED | WCONTINUED);
               if (pid == -1)
-                // No more child processes
+                // There are still processes that are not terminated in the fg pg
                 if (errno == ECHILD)
                   break;
 
-              // Process was interrupted or terminated by a signal
-              if (WIFSTOPPED(status) || WIFSIGNALED(status))
+              // Process was interrupted by Ctrl+Z
+              if (WIFSTOPPED(status))
                 break;
             }
+            output = -1;
+            input = 0;
             fg = 0;
           }
-          tcsetpgrp(0, getpid());
         }
         else
         {
@@ -251,6 +248,7 @@ int main(char *argc, char **argv)
             bgpg = pid;
           setpgid(pid, bgpg);
         }
+        tcsetpgrp(0, getpid());
       }
     }
     if (i != 0)
