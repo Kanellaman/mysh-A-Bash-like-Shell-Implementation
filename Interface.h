@@ -8,6 +8,7 @@
 #include <glob.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #define LINE_SIZE 1024
 #define TOKEN_NUM 50
