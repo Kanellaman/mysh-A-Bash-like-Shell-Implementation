@@ -482,12 +482,13 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
                 prev->next = NULL;
                 free(tmp);
                 strcpy(*str, get_command(*hs, num));
-                strcat(*str, " ");
+                if ((*str)[strlen(*str) - 1] == '\n')
+                    (*str)[strlen(*str) - 1] = '\0';
                 int i = 2;
                 while (tokens[i] != NULL)
                 {
-                    strcat(*str, tokens[i++]);
                     strcat(*str, " ");
+                    strcat(*str, tokens[i++]);
                 }
                 strcat(*str, "\n");
                 return num;
@@ -574,7 +575,7 @@ char ***separate(char ***tok, char **tokens, int *total)
         p++;
     }
     *total = pipes + pun + amper;
-    
+
     if (*total > 0)
     {
 
