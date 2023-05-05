@@ -22,9 +22,13 @@ void sig_handler(int sig)
 }
 int main(char *argc, char **argv)
 {
-  struct sigaction sa;
+  struct sigaction sa, as;
   sa.sa_handler = sig_handler;
   sa.sa_flags = SA_SIGINFO;
+  sigemptyset(&sa.sa_mask);
+  as.sa_handler = SIG_IGN;
+  as.sa_flags = SA_SIGINFO;
+  sigemptyset(&as.sa_mask);
   int k = 5;
   char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
   int pid, i = 1, num = -5, total = 0, status;
@@ -41,11 +45,25 @@ int main(char *argc, char **argv)
     perror("sigaction for SIGTSTP");
     exit(EXIT_FAILURE);
   }
-  signal(SIGTTOU, SIG_IGN);
-  signal(SIGTTIN, SIG_IGN);
-  setpgid(0, getpid());
-  tcsetpgrp(0, getpid());
+
+  /* Ignore these signals so that we give the input/output to the process group we want later on */
+  // signal(SIGTTOU, SIG_IGN);
+  // signal(SIGTTIN, SIG_IGN);
+  if (sigaction(SIGTTOU, &as, NULL) == -1)
+  {
+    perror("sigaction for SIGTTOU");
+    exit(EXIT_FAILURE);
+  }
+
+  if (sigaction(SIGTTIN, &as, NULL) == -1)
+  {
+    perror("sigaction for SIGTTIN");
+    exit(EXIT_FAILURE);
+  }
+  setpgid(0, getpid());   // Create a process group that contains only the shell
+  tcsetpgrp(0, getpid()); // Set as foreground process group the shell
   printf("in-mysh-now:> ");
+
   while (i != 0 && fgets(str, LINE_SIZE, stdin) != NULL)
   {
     pid_t bgpg = 0;
@@ -177,7 +195,7 @@ int main(char *argc, char **argv)
           if (!fg)
             fg = pid;
           setpgid(getpid(), fg);
-          tcsetpgrp(0, fg); // Reserve the terminal for input-output for you
+          tcsetpgrp(0, fg); // Set as foreground process group the commands that are now running
         }
         else if (back == 1)
           setpgid(pid, bgpg);
@@ -209,7 +227,7 @@ int main(char *argc, char **argv)
           if (!fg)
             fg = pid;
           setpgid(pid, fg);
-          tcsetpgrp(0, fg);
+          tcsetpgrp(0, fg); // Set as foreground process group the commands that are now running
           if (strcmp(tok[j][last - 1], "|"))
           {
             while (1)
@@ -233,7 +251,7 @@ int main(char *argc, char **argv)
           setpgid(pid, bgpg);
         else // Just a background command
           setpgid(pid, 0);
-        tcsetpgrp(0, getpid());
+        tcsetpgrp(0, getpid()); // Set as foreground process group the shell
       }
       if (strcmp(tok[j][last - 1], "|") && back != -1)
         back = -1; // Reset the (pipeline) background "back" flag
