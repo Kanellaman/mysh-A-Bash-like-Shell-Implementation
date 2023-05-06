@@ -180,25 +180,22 @@ char **tokenize(char *str)
     } /* In case of " " get the whole " " string as it is */
     else if (cp[0] == '"')
         tokens = quote(cp, tokens, &i);
-    else
+    else /* If there are no spaces between <>|&; this function will find them and make them separate tokens */
         tokens = custom_tokenize(cp, tokens, &i, &last, &j, &flag);
+    /* Repeat the above for every word divided by spaces with the others */
     while (cp != NULL)
     {
         last = 0;
         i++;
         cp = strtok(NULL, " \n");
         if (cp == NULL)
-        {
             break;
-        }
         else if (cp[0] == '"')
             tokens = quote(cp, tokens, &i);
         else
-        {
             tokens = custom_tokenize(cp, tokens, &i, &last, &j, &flag);
-
-        }
     }
+    /* Free reserved memory and search for wild characters to replace */
     free(cp);
     free(copy);
     return wild(tokens);
@@ -207,9 +204,8 @@ char **quote(char *cp, char **tokens, int *i)
 {
     tokens[*i] = malloc(LINE_SIZE * sizeof(char) + 1);
     strcpy(tokens[*i], cp);
-
-    if (cp[strlen(cp) - 1] != '"')
-    { /* If there are spaces between the " and " make sure you get everything */
+    if (cp[strlen(cp) - 1] != '\"')
+    { /* Make sure you get everything between " and " */
         cp = strtok(NULL, "\"");
         if (cp != NULL)
         {
@@ -235,19 +231,19 @@ char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool 
 {
     int x, y = *i;
     for (x = 0; x < strlen(cp); x++)
-    {
+    { /* Search the word for special characters like <>|&; */
         if (cp[x] == '>' && x + 1 < strlen(cp) && cp[x + 1] == '>')
-        {
+        { /* If you find >> ... */
             char *s = ">>";
 
             if (x != 0)
-            {
+            { /* last variable points to next char of the last character of the string cp we added to a token */
                 tokens[y] = malloc((x - *last) * sizeof(char) + 1);
-                strncpy(tokens[y++], cp + *last, x - *last);
+                strncpy(tokens[y++], cp + *last, x - *last); // Add as a token the characters from the last one inserted(last) till the character '>'
                 tokens[y - 1][x - *last] = '\0';
             }
             tokens[y] = malloc(sizeof(char) + 1);
-            strcpy(tokens[y++], s);
+            strcpy(tokens[y++], s); // Store the special character as an individual token
             x++;
             *last = x + 1;
         }
@@ -257,44 +253,34 @@ char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool 
             s[0] = cp[x];
             s[1] = '\0';
             if (x != 0 && *last != x)
-            {
+            { /* last variable points to next char of the last character of the string cp we added to a token */
                 tokens[y] = malloc((x - *last) * sizeof(char) + 1);
-                strncpy(tokens[y++], cp + *last, x - *last);
+                strncpy(tokens[y++], cp + *last, x - *last); // Add as a token the characters from the last one inserted(last) till the special character you found
                 tokens[y - 1][x - *last] = '\0';
             }
             tokens[y] = malloc(sizeof(char) + 1);
-            strcpy(tokens[y++], s);
+            strcpy(tokens[y++], s); // Store the special character as an individual token
             *last = x + 1;
         }
     }
-    tokens[y] = malloc((x - *last) * sizeof(char) + 1);
-    strncpy(tokens[y], cp + *last, x - *last);
-    tokens[y][x - *last] = '\0';
-    if (!strlen(tokens[y]))
+    /* If there are remaining characters add them to a token */
+    if (x - *last)
     {
-        free(tokens[y]);
-        tokens[y--] = NULL;
+        tokens[y] = malloc((x - *last) * sizeof(char) + 1);
+        strncpy(tokens[y], cp + *last, x - *last);
+        tokens[y][x - *last] = '\0';
     }
     *j = x;
     *i = y;
     return tokens;
 }
 int cd(char **tokens)
-{
+{ /* Support of cd command */
     char *cd_loc = tokens[1];
     if (cd_loc == NULL)
         cd_loc = getenv("HOME");
     int error = chdir(cd_loc);
     return error;
-}
-
-int find(char **tokens, char *redir)
-{
-    int i = 0;
-    while (tokens[i] != NULL)
-        if (!strcmp(tokens[i++], redir))
-            return --i;
-    return -1;
 }
 
 int redirection(char **tokens)

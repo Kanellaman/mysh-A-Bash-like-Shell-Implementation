@@ -30,7 +30,6 @@ char ***frees(char ***tokens,int total);
 char **tokenize(char *str);
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j,bool *flag);
 int cd(char **tokens);
-int find(char **tokens, char *redir);
 int redirection(char **tokens);
 ptr append(ptr hs,char *str);
 void print(ptr hs);
