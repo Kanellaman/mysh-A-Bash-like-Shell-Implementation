@@ -17,8 +17,8 @@ void sig_handler(int sig)
       perror("killpg");
       exit(EXIT_FAILURE);
     }
-    fg = 0;
   }
+  fg = 0;
 }
 int main(char *argc, char **argv)
 {
@@ -29,11 +29,12 @@ int main(char *argc, char **argv)
   as.sa_handler = SIG_IGN;
   as.sa_flags = SA_SIGINFO;
   sigemptyset(&as.sa_mask);
-  int k = 5;
   char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
   int pid, i = 1, num = -5, total = 0, status;
   ptr hs = NULL;
   alr al = NULL;
+
+  /* Handle the signals through the sig_handler function */
   if (sigaction(SIGINT, &sa, NULL) == -1)
   {
     perror("sigaction for SIGINT");
@@ -47,8 +48,6 @@ int main(char *argc, char **argv)
   }
 
   /* Ignore these signals so that we give the input/output to the process group we want later on */
-  // signal(SIGTTOU, SIG_IGN);
-  // signal(SIGTTIN, SIG_IGN);
   if (sigaction(SIGTTOU, &as, NULL) == -1)
   {
     perror("sigaction for SIGTTOU");
@@ -67,12 +66,11 @@ int main(char *argc, char **argv)
   while (i != 0 && fgets(str, LINE_SIZE, stdin) != NULL)
   {
     pid_t bgpg = 0;
-
-    int child = waitpid(-1, &status, WNOHANG);
-    if (child > 0)
-      printf("\n            Process with pid %d terminated\n\n", child);
-    tok = frees(tok, total);
-    total = 0;
+    int child;
+    while ((child = waitpid(-1, &status, WNOHANG)) > 0)
+      printf("\n            %d Done!\n\n", child);
+    tok = frees(tok, total); // Free the memory used for the previous commands
+    total = 0;               // This is the variable that stores the number of commands the user gave
     tokens = tokenize(str);
 
     if (tokens == NULL)
@@ -91,6 +89,7 @@ int main(char *argc, char **argv)
       printf("in-mysh-now:> ");
       continue;
     }
+    /* Separate each command to tokens */
     tok = separate(tok, tokens, &total);
     if (tok == NULL)
     {
@@ -104,6 +103,8 @@ int main(char *argc, char **argv)
     for (int j = 0; j < total; j++)
     {
       char *prev = malloc(TOKEN_NUM);
+
+      /* Search for aliases or history commands */
       while ((num = hs_al(tok[j], &hs, &al, &str)) >= 0)
       {
         strcpy(prev, tok[j][0]); // Keeping the first token so that we dont end up to an infinite loop of aliases or history commands
@@ -121,22 +122,22 @@ int main(char *argc, char **argv)
         if (num > 0 && total == 1) // In case we have only one command and it coreesponds to "history <num>" dont insert it to the history
           hs = append(hs, str);
         tok[j] = tokenize(str);
-        if (!strcmp(prev, tok[j][0]))
+        if (!strcmp(prev, tok[j][0]) && strcmp(prev, "history"))
         { // If previous first token is the same with the new one then stop searching for aliases/history commands
           num = -2;
           break;
         }
         strcpy(prev, tok[j][0]);
       }
-      free(prev);
+      free(prev); // Free memory
       if (!strcmp(tok[j][0], "exit"))
-      {
+      { // Exit the shell
         printf("You are exiting mysh!\n");
         i = 0;
         break;
       }
       else if (!strcmp(tok[j][0], "cd"))
-      {
+      { // Perform cd
         if (cd(tok[j]) != 0)
           perror("cd");
         continue;
@@ -145,7 +146,7 @@ int main(char *argc, char **argv)
         continue;
       int last = -1, status;
       pid_t pid, pgid;
-      while (tok[j][++last] != NULL)
+      while (tok[j][++last] != NULL) // Set last - 1 to point to the last element of the current command
         ;
       if (!strcmp(tok[j][last - 1], "|"))
       {
@@ -155,11 +156,13 @@ int main(char *argc, char **argv)
       else if (output > -1)
         output = 1;
       pid = fork();
-      if (!strcmp(tok[j][last - 1], "|") && back == -1)
-      { // Handle background pipeline
+
+      if (!strcmp(tok[j][last - 1], "|") && back == -1) // Only the first command of the pipe will execute this!
+      {                                                 // Handle background pipeline
         for (int i = j + 1; i < total; i++)
         {
           int last = -1;
+          /* Check the last token of every command */
           while (tok[i][++last] != NULL)
             ;
           if (!strcmp(tok[i][last - 1], "|"))
@@ -167,8 +170,9 @@ int main(char *argc, char **argv)
           if (!strcmp(tok[i][last - 1], ";"))
             break;
           if (!strcmp(tok[i][last - 1], "&"))
-          {
+          { /* If the piping is background */
             back = 1;
+            /* Set the process id of the first pipeline command as the process group leader */
             if (pid == 0)
               bgpg = getpid();
             else
@@ -179,18 +183,18 @@ int main(char *argc, char **argv)
 
       if (pid == 0)
       {
-        if (input)
-        {
+        if (input) // If there is piping
+        {          /* Determine the input of the child */
           dup2(input, 0);
           close(input);
         }
-        if (output != 1 && output != -1)
-        {
+        if (output != 1 && output != -1) // If there is piping
+        {                                /* Determine the output of the child */
           dup2(output, 1);
           close(output);
           close(fds[0]);
         }
-        if (strcmp(tok[j][last - 1], "&") && back == -1)
+        if (strcmp(tok[j][last - 1], "&"))
         {
           if (!fg)
             fg = pid;
@@ -198,11 +202,11 @@ int main(char *argc, char **argv)
           tcsetpgrp(0, fg); // Set as foreground process group the commands that are now running
         }
         else if (back == 1)
-          setpgid(pid, bgpg);
+          setpgid(getpid(), bgpg); // Add the process to the background pipe process group
         else
-          setpgid(pid, 0);
+          setpgid(getpid(), 0); // Add each bg command to its own process group
 
-        if (redirection(tok[j]) == -1)
+        if (redirection(tok[j]) == -1) // If there are redirections then make them happen!
           return 0;
 
         char **args = cleanup(tok[j]);
@@ -216,25 +220,31 @@ int main(char *argc, char **argv)
       }
       else
       {
+        /* If a command runs in the background print its pid */
+        if (!strcmp(tok[j][last - 1], "&") || back == 1)
+          printf("[Running in background] %d\n", pid);
+
+        /* Close the fds if they have been openned */
         if (output != 1 && output != -1)
           close(output);
         if (input != 0)
           close(input);
+
         if (!strcmp(tok[j][last - 1], "|"))
-          input = fds[0];
-        if (strcmp(tok[j][last - 1], "&") && back == -1)
+          input = fds[0]; // Set the input for the next command of the pipe
+        if (strcmp(tok[j][last - 1], "&"))
         { // Foreground command(s) including cases of pipeline
           if (!fg)
             fg = pid;
-          setpgid(pid, fg);
+          setpgid(pid, fg); // Add the pid child to the foreground pg
           tcsetpgrp(0, fg); // Set as foreground process group the commands that are now running
           if (strcmp(tok[j][last - 1], "|"))
           {
             while (1)
-            {
+            { // Wait all the fg processes
               pid_t pid = waitpid(-fg, &status, WUNTRACED | WCONTINUED);
               if (pid == -1)
-                // There are still processes that are not terminated in the fg pg
+                // There are no more processe in the fg
                 if (errno == ECHILD)
                   break;
 
@@ -242,23 +252,29 @@ int main(char *argc, char **argv)
               if (WIFSTOPPED(status))
                 break;
             }
+            /* Reset the foregroud "fg" variable and the variables output,input */
             output = -1;
             input = 0;
             fg = 0;
           }
         }
-        else if (back == 1) // Background pipeline
-          setpgid(pid, bgpg);
-        else // Just a background command
-          setpgid(pid, 0);
+        else if (back == 1)
+          setpgid(pid, bgpg); // Add the process to the background pipe process group
+        else
+          setpgid(pid, 0);      // Add each bg command to its own process group
         tcsetpgrp(0, getpid()); // Set as foreground process group the shell
       }
       if (strcmp(tok[j][last - 1], "|") && back != -1)
-        back = -1; // Reset the (pipeline) background "back" flag
+      { /* Reset the (pipeline) background "back" flag and the variables output,input */
+        back = -1;
+        output = -1;
+        input = 0;
+      }
     }
     if (i != 0)
       printf("in-mysh-now:> ");
   }
+  /* Free the memory you used */
   tok = frees(tok, total);
   free(str);
   del(hs);

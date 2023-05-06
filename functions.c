@@ -1,6 +1,6 @@
 #include "Interface.h"
 char *get_command(ptr hs, int num)
-{
+{ /* Returns the i-th command of the history */
     int i = 1;
     while (hs->next != NULL)
     {
@@ -12,7 +12,7 @@ char *get_command(ptr hs, int num)
         return hs->command;
 }
 void del(ptr hs)
-{
+{ /* Free the memory that history uses */
     ptr prev;
     if (hs == NULL)
         return;
@@ -25,7 +25,7 @@ void del(ptr hs)
     free(hs);
 }
 ptr append(ptr hs, char *str)
-{
+{ /* Add a command to the history */
     if (hs == NULL)
     {
         hs = malloc(sizeof(struct history));
@@ -38,7 +38,7 @@ ptr append(ptr hs, char *str)
 
     while (hs->next != NULL)
         hs = hs->next;
-    if (!strcmp(str, hs->command))
+    if (!strcmp(str, hs->command)) // If you try to insert the same command as the last one in history, don't
         return head;
 
     head->count = head->count + 1;
@@ -55,10 +55,10 @@ ptr append(ptr hs, char *str)
     strcpy(hs->next->command, str);
     hs->next->count = 0;
     hs->next->next = NULL;
-    return head;
+    return head; // Return a pointer to the first command
 }
 void print(ptr hs)
-{
+{ /* Print the history */
     int i = 1;
     if (hs == NULL)
         return;
@@ -70,7 +70,7 @@ void print(ptr hs)
     printf("%d: %s", i, hs->command);
 }
 alr in(alr al, char *alias, char *cmd)
-{
+{ /* Add an alias */
     alr head = al, tmp;
     if (al == NULL)
     {
@@ -81,7 +81,7 @@ alr in(alr al, char *alias, char *cmd)
         return al;
     }
     if ((tmp = search(al, alias)) != NULL)
-    {
+    { /* If the alias already exists,replace it with the new command */
         strcpy(tmp->cmd, cmd);
         return head;
     }
@@ -94,7 +94,7 @@ alr in(alr al, char *alias, char *cmd)
     return head;
 }
 alr search(alr al, char *alias)
-{
+{ /* Return a pointer to the alias/If not found,return NULL */
     if (al == NULL)
         return NULL;
     while (al->next != NULL)
@@ -109,7 +109,7 @@ alr search(alr al, char *alias)
 }
 
 alr delal(alr al, char *alias)
-{
+{ /* Delete an alias */
     alr head = al, tmp;
     if (al == NULL)
     {
@@ -137,7 +137,7 @@ alr delal(alr al, char *alias)
     return head;
 }
 void dele(alr al)
-{
+{ /* Delete all aliases */
     alr prev;
     if (al == NULL)
         return;
@@ -150,14 +150,16 @@ void dele(alr al)
     free(al);
 }
 char **tokenize(char *str)
-{
+{ /* This functions gets a string and tokenizes it to tokens whcih are stored at the variable tokens */
     int i = 0, last = 0, j = 0, count = 0;
     char *cp, **tokens = malloc(TOKEN_NUM * sizeof(char *));
     for (int i = 0; i < TOKEN_NUM; i++)
         tokens[i] = NULL;
     bool flag = false;
-    char *copy = malloc(strlen(str) * sizeof(char) + 1);
+    char *copy = malloc(strlen(str) * sizeof(char) + 1); // A copy of user's input
     strcpy(copy, str);
+
+    /* Bad syntax-print error */
     for (int i = 0; i < strlen(copy); i++)
         if (copy[i] == '\"')
             count++;
@@ -165,55 +167,21 @@ char **tokenize(char *str)
     {
         printf("There is \" that never closes\nSyntax error\n");
         free(copy);
+        free(tokens);
         return NULL;
     }
-
+    /* Deviding the input to spaces */
     cp = strtok(copy, " \n");
     if (cp == NULL)
-    {
+    { /* In case of empty input containing spaces and \n ask the next input */
         free(cp);
         free(copy);
         return NULL;
-    }
+    } /* In case of " " get the whole " " string as it is */
     else if (cp[0] == '"')
-    {
-        tokens[i] = malloc(LINE_SIZE * sizeof(char) + 1);
-        strcpy(tokens[i], cp);
-
-        if (cp[strlen(cp) - 1] != '"')
-        {
-            cp = strtok(NULL, "\"");
-            if (cp != NULL)
-            {
-                if (cp[0] == '\n')
-                    cp[0] = ' ';
-                else
-                    strcat(tokens[i], " ");
-
-                strcat(tokens[i], cp);
-                strcat(tokens[i], "\"");
-            }
-        }
-        if (tokens[i][strlen(tokens[i]) - 1] != '\"')
-        {
-            char ch = tokens[i][strlen(tokens[i]) - 1];
-            tokens[i][strlen(tokens[i]) - 1] = '\0';
-            tokens[++i] = malloc(sizeof(char) + 1);
-            sprintf(tokens[i], "%c", ch);
-        }
-    }
+        tokens = quote(cp, tokens, &i);
     else
-    {
         tokens = custom_tokenize(cp, tokens, &i, &last, &j, &flag);
-        tokens[i] = malloc((j - last) * sizeof(char) + 1);
-        strncpy(tokens[i], cp + last, j - last);
-        tokens[i][j - last] = '\0';
-        if (!strlen(tokens[i])) /* If the last token is a character <,>,|... */
-        {
-            free(tokens[i]);
-            tokens[i--] = NULL;
-        }
-    }
     while (cp != NULL)
     {
         last = 0;
@@ -224,47 +192,44 @@ char **tokenize(char *str)
             break;
         }
         else if (cp[0] == '"')
-        {
-            tokens[i] = malloc(LINE_SIZE * sizeof(char) + 1);
-            strcpy(tokens[i], cp);
-            if (cp[strlen(cp) - 1] != '"')
-            {
-                cp = strtok(NULL, "\"");
-                if (cp != NULL)
-                {
-                    if (cp[0] == '\n')
-                        cp[0] = ' ';
-                    else
-                        strcat(tokens[i], " ");
-
-                    strcat(tokens[i], cp);
-                    strcat(tokens[i], "\"");
-                }
-            }
-            if (tokens[i][strlen(tokens[i]) - 1] != '\"')
-            {
-                char ch = tokens[i][strlen(tokens[i]) - 1];
-                tokens[i][strlen(tokens[i]) - 1] = '\0';
-                tokens[++i] = malloc(sizeof(char) + 1);
-                sprintf(tokens[i], "%c", ch);
-            }
-        }
+            tokens = quote(cp, tokens, &i);
         else
         {
             tokens = custom_tokenize(cp, tokens, &i, &last, &j, &flag);
-            tokens[i] = malloc((j - last) * sizeof(char) + 1);
-            strncpy(tokens[i], cp + last, j - last);
-            tokens[i][j - last] = '\0';
-            if (!strlen(tokens[i]))
-            {
-                free(tokens[i]);
-                tokens[i--] = NULL;
-            }
+
         }
     }
     free(cp);
     free(copy);
     return wild(tokens);
+}
+char **quote(char *cp, char **tokens, int *i)
+{
+    tokens[*i] = malloc(LINE_SIZE * sizeof(char) + 1);
+    strcpy(tokens[*i], cp);
+
+    if (cp[strlen(cp) - 1] != '"')
+    { /* If there are spaces between the " and " make sure you get everything */
+        cp = strtok(NULL, "\"");
+        if (cp != NULL)
+        {
+            if (cp[0] == '\n')
+                cp[0] = ' ';
+            else
+                strcat(tokens[*i], " ");
+
+            strcat(tokens[*i], cp);
+            strcat(tokens[*i], "\"");
+        }
+    }
+    if (tokens[*i][strlen(tokens[*i]) - 1] != '\"')
+    {
+        char ch = tokens[*i][strlen(tokens[*i]) - 1];
+        tokens[*i][strlen(tokens[*i]) - 1] = '\0';
+        tokens[++(*i)] = malloc(sizeof(char) + 1);
+        sprintf(tokens[*i], "%c", ch);
+    }
+    return tokens;
 }
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag)
 {
@@ -301,6 +266,14 @@ char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool 
             strcpy(tokens[y++], s);
             *last = x + 1;
         }
+    }
+    tokens[y] = malloc((x - *last) * sizeof(char) + 1);
+    strncpy(tokens[y], cp + *last, x - *last);
+    tokens[y][x - *last] = '\0';
+    if (!strlen(tokens[y]))
+    {
+        free(tokens[y]);
+        tokens[y--] = NULL;
     }
     *j = x;
     *i = y;
