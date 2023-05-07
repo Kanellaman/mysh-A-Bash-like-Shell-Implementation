@@ -1,68 +1,19 @@
 #include "Interface.h"
 
 pid_t fg = 0;
-void sig_handler(int sig)
-{
-  if (sig == SIGINT)
-    if (fg && killpg(-fg, sig) == -1)
-    { // Send the signal to the job's process group
-      perror("killpg");
-      exit(EXIT_FAILURE);
-    }
 
-  if (sig == SIGTSTP)
-  {
-    if (fg && killpg(-fg, sig) == -1)
-    { // Send the signal to the job's process group
-      perror("killpg");
-      exit(EXIT_FAILURE);
-    }
-  }
-  fg = 0;
-}
 int main(char *argc, char **argv)
 {
   struct sigaction sa, as;
-  sa.sa_handler = sig_handler;
-  sa.sa_flags = SA_SIGINFO;
-  sigemptyset(&sa.sa_mask);
-  as.sa_handler = SIG_IGN;
-  as.sa_flags = SA_SIGINFO;
-  sigemptyset(&as.sa_mask);
   char *str = malloc(LINE_SIZE), **tokens = NULL, ***tok = NULL;
   int pid, i = 1, num = -5, total = 0, status;
   ptr hs = NULL;
   alr al = NULL;
+  fg = 0;
+  /* Handle some signals */
+  signals(&sa, &as);
 
-  /* Handle the signals through the sig_handler function */
-  if (sigaction(SIGINT, &sa, NULL) == -1)
-  {
-    perror("sigaction for SIGINT");
-    exit(EXIT_FAILURE);
-  }
-
-  if (sigaction(SIGTSTP, &sa, NULL) == -1)
-  {
-    perror("sigaction for SIGTSTP");
-    exit(EXIT_FAILURE);
-  }
-
-  /* Ignore these signals so that we give the input/output to the process group we want later on */
-  if (sigaction(SIGTTOU, &as, NULL) == -1)
-  {
-    perror("sigaction for SIGTTOU");
-    exit(EXIT_FAILURE);
-  }
-
-  if (sigaction(SIGTTIN, &as, NULL) == -1)
-  {
-    perror("sigaction for SIGTTIN");
-    exit(EXIT_FAILURE);
-  }
-  setpgid(0, getpid());   // Create a process group that contains only the shell
-  tcsetpgrp(0, getpid()); // Set as foreground process group the shell
   printf("in-mysh-now:> ");
-
   while (i != 0 && fgets(str, LINE_SIZE, stdin) != NULL)
   {
     pid_t bgpg = 0;
@@ -103,11 +54,10 @@ int main(char *argc, char **argv)
     for (int j = 0; j < total; j++)
     {
       char *prev = malloc(TOKEN_NUM);
-
-      /* Search for aliases or history commands */
+      /* Search for aliases or myhistory commands */
       while ((num = hs_al(tok[j], &hs, &al, &str)) >= 0)
       {
-        strcpy(prev, tok[j][0]); // Keeping the first token so that we dont end up to an infinite loop of aliases or history commands
+        strcpy(prev, tok[j][0]); // Keeping the first token so that we dont end up to an infinite loop of aliases or myhistory commands
         /* Freeing the memory for the last command as we no longer need it */
         for (int i = 0; i < TOKEN_NUM; i++)
           if (tok[j][i] != NULL)
@@ -119,11 +69,12 @@ int main(char *argc, char **argv)
             break;
         free(tok[j]);
         tok[j] = NULL;
-        if (num > 0 && total == 1) // In case we have only one command and it coreesponds to "history <num>" dont insert it to the history
+        if (num > 0 && total == 1) // In case we have only one command and it coreesponds to "myhistory <num>" dont insert it to the myhistory
           hs = append(hs, str);
+        /* Tokenize the new command so that it is ready to be executed */
         tok[j] = tokenize(str);
-        if (!strcmp(prev, tok[j][0]) && strcmp(prev, "history"))
-        { // If previous first token is the same with the new one then stop searching for aliases/history commands
+        if (!strcmp(prev, tok[j][0]) && strcmp(prev, "myhistory"))
+        { // If previous first token is the same with the new one then stop searching for aliases/myhistory commands
           num = -2;
           break;
         }
@@ -149,12 +100,12 @@ int main(char *argc, char **argv)
       while (tok[j][++last] != NULL) // Set last - 1 to point to the last element of the current command
         ;
       if (!strcmp(tok[j][last - 1], "|"))
-      {
+      { /* Make a pipe */
         pipe(fds);
-        output = fds[1];
+        output = fds[1]; /* Set as the output of the command the fds[1] */
       }
       else if (output > -1)
-        output = 1;
+        output = 1; /* Reset the output if this is the last command of the pipe */
       pid = fork();
 
       if (!strcmp(tok[j][last - 1], "|") && back == -1) // Only the first command of the pipe will execute this!
@@ -208,7 +159,8 @@ int main(char *argc, char **argv)
 
         if (redirection(tok[j]) == -1) // If there are redirections then make them happen!
           return 0;
-
+        signal(SIGTTIN, SIG_DFL);
+        signal(SIGTTOU, SIG_DFL);
         char **args = cleanup(tok[j]);
         int error = execvp(args[0], args);
         if (error == -1)

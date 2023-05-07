@@ -12,7 +12,7 @@
 
 #define LINE_SIZE 1024
 #define TOKEN_NUM 50
-
+pid_t fg;
 typedef struct history *ptr;
 typedef struct alias *alr;
 struct history
@@ -23,24 +23,26 @@ struct history
 };
 struct alias
 {
-    char alias[LINE_SIZE/2],cmd[LINE_SIZE/2];
+    char alias[LINE_SIZE / 2], cmd[LINE_SIZE / 2];
     struct alias *next;
 };
-char ***frees(char ***tokens,int total);
+char ***frees(char ***tokens, int total);
 char **tokenize(char *str);
-char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j,bool *flag);
+char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag);
 int cd(char **tokens);
 int redirection(char **tokens);
-ptr append(ptr hs,char *str);
+ptr append(ptr hs, char *str);
 void print(ptr hs);
 void del(ptr hs);
 char *get_command(ptr hs, int num);
-alr delal(alr al,char *alias);
+alr delal(alr al, char *alias);
 alr in(alr al, char *alias, char *cmd);
 alr search(alr al, char *alias);
 void dele(alr al);
-int hs_al(char **tokens, ptr *hs, alr *al,char **str);
+int hs_al(char **tokens, ptr *hs, alr *al, char **str);
 char **wild(char **tokens);
 char **cleanup(char **tokens);
-char ***separate(char ***tok,char **tokens,int *total);
-char **quote(char *cp,char **tokens,int *i);
+char ***separate(char ***tok, char **tokens, int *total);
+char **quote(char *cp, char **tokens, int *i);
+void sig_handler(int sig);
+void signals(struct sigaction *sa, struct sigaction *as);
