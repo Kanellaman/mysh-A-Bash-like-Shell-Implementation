@@ -210,19 +210,24 @@ char **cleanup(char **tokens)
 }
 char ***separate(char ***tok, char **tokens, int *total)
 { /* Check if the user has given multiple commands to one line */
-    int p = 0;
+    int p = 0, pipes = 0, pun = 0, amper = 0;
     while (tokens[p] != NULL)
-    { /* Find how many different commands exists */
-        if (!strcmp(tokens[p], "|") || !strcmp(tokens[p], ";") || !strcmp(tokens[p], "&"))
+    {
+        if (!strcmp(tokens[p], "|"))
+            pipes++;
+        else if (!strcmp(tokens[p], ";"))
+            pun++;
+        else if (!strcmp(tokens[p], "&"))
         {
             if (tokens[p + 1] != NULL && !strcmp(tokens[p + 1], ";"))
-                (*total)--;
-            (*total)++;
+                pun--;
+            amper++;
         }
         p++;
     }
+    *total = pipes + pun + amper;
 
-    if (*total > 1)
+    if (*total > 0)
     { /* If there are more than 1 commands */
 
         tok = malloc(sizeof(char **));
