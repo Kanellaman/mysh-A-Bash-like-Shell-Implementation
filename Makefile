@@ -19,11 +19,6 @@ memory:
 	make
 	valgrind --leak-check=full --track-origins=yes ./$(EXEC)
 
-# https://stackoverflow.com/questions/5134891/how-do-i-use-valgrind-to-find-memory-leaks 
-#debug
-debug: 
-	$(CC) -g3 $(Files) -o $(EXEC) 
-	gdb -q $(EXEC)
 # Clear
 clean:
 	rm -f $(EXEC) $(OBJS)

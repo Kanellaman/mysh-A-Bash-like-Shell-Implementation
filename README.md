@@ -96,6 +96,8 @@ in-mysh-now:> destroyalias myhome
 
 This deletes the alias "myhome".
 
+Alias of an alias is supported but only one word can be an alias!
+
 ## 6. Signals Management
 
 The shell can handle simple signals.
@@ -145,7 +147,7 @@ in-mysh-now:> cat file1 ; sort file2 & sleep 10
 
 1. The main function initializes variables and sets up signal handling using the `signals` function.
 2. It enters a loop to continuously read user input until the user chooses to exit or Ctrl+D is givenz.
-3. Inside the loop, it checks for any completed `background processes` using waitpid and prints a message for each completed process.
+3. Inside the loop, it checks for any completed `background process` using waitpid and prints a message for each completed process.
 4. The input string is tokenized into individual commands using the tokenize function.
 5. The commands are separated into a two-dimensional array of tokens using the separate function.
 6. The code handles `aliases` and `myhistory` commands, replacing them with their respective commands.
