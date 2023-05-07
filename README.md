@@ -143,13 +143,13 @@ in-mysh-now:> cat file1 ; sort file2 & sleep 10
 
 # Brief summary of the code provided
 
-1. The main function initializes variables and sets up signal handling using the signals function.
-2. It enters a loop to continuously read user input until the user chooses to exit.
-3. Inside the loop, it checks for any completed background processes using waitpid and prints a message for each completed process.
+1. The main function initializes variables and sets up signal handling using the `signals` function.
+2. It enters a loop to continuously read user input until the user chooses to exit or Ctrl+D is givenz.
+3. Inside the loop, it checks for any completed `background processes` using waitpid and prints a message for each completed process.
 4. The input string is tokenized into individual commands using the tokenize function.
 5. The commands are separated into a two-dimensional array of tokens using the separate function.
-6. The code handles aliases and myhistory commands, replacing them with their respective commands.
-7. Special commands like "exit" and "cd" are handled separately.
-8. For each command in the two-dimensional array, it sets up input and output redirection if necessary, forks a child process, and executes the command using execvp.
-9. Parent process handles foreground and background execution, waits for foreground processes to complete, and updates foreground process group.
+6. The code handles `aliases` and `myhistory` commands, replacing them with their respective commands.
+7. Special commands like `exit` and `cd` are handled separately.
+8. For each command in the two-dimensional array, it sets up `input` and `output` `redirection` if necessary, forks a child process, and executes the command using `execvp`.
+9. Parent process handles `foreground` and `background` execution, waits for foreground processes to complete, and updates foreground `process group`.
 10. The loop continues until the user chooses to exit.

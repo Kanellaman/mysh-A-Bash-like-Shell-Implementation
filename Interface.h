@@ -31,7 +31,7 @@ struct alias
 void sig_handler(int sig);
 void signals(struct sigaction *sa, struct sigaction *as);
 
-/* Tokenization and dividing commands */
+/* Parsing,tokenization and dividing commands */
 char **tokenize(char *str);
 char **custom_tokenize(char *cp, char **tokens, int *i, int *last, int *j, bool *flag);
 char **wild(char **tokens);

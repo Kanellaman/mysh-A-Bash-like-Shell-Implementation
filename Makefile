@@ -2,10 +2,10 @@
 CC = gcc
 
 #.c files
-Files = mysh.c functions.c
+Files = mysh.c ShellFunctions.c History_Aliases.c Tokenize.c
 
 #.o objects
-OBJS = mysh.o functions.o
+OBJS = mysh.o ShellFunctions.o History_Aliases.o Tokenize.o
 
 #Executable
 EXEC = mysh
