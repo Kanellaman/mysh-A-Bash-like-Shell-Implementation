@@ -80,7 +80,8 @@ int main(char *argc, char **argv)
         }
         strcpy(prev, tok[j][0]);
       }
-      free(prev); // Free memory
+      if (prev != NULL)
+        free(prev); // Free memory
       if (!strcmp(tok[j][0], "exit"))
       { // Exit the shell
         printf("You are exiting mysh!\n");
