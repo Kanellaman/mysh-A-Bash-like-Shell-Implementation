@@ -14,11 +14,6 @@ EXEC = mysh
 $(EXEC): $(OBJS) $(Files)
 	$(CC) $(OBJS) -o $(EXEC)
 
-# Memory-loss
-memory:
-	make
-	valgrind --leak-check=full --track-origins=yes ./$(EXEC)
-
 # Clear
 clean:
 	rm -f $(EXEC) $(OBJS)

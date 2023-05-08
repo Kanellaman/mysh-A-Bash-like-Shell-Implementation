@@ -49,9 +49,7 @@ void signals(struct sigaction *sa, struct sigaction *as)
 int cd(char **tokens)
 { /* Support of cd command */
     char *cd_loc = tokens[1];
-    if (!strcmp(cd_loc, "&") || !strcmp(cd_loc, "|") || !strcmp(cd_loc, ";"))
-        cd_loc = NULL;
-    if (cd_loc == NULL)
+    if (cd_loc == NULL || (!strcmp(cd_loc, "&") || !strcmp(cd_loc, "|") || !strcmp(cd_loc, ";")))
         cd_loc = getenv("HOME");
     int error = chdir(cd_loc);
     return error;
@@ -110,16 +108,6 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
         { /* return the myhistory <num> myhistory command-if exists */
             if (num > 0 && num <= (*hs)->count - 1)
             {
-                /* Delete from myhistory commands with syntax myhistory <num> */
-                // ptr tmp = (*hs), prev = (*hs);
-                // tmp->count--;
-                // while (tmp->next != NULL)
-                // {
-                //     prev = tmp;
-                //     tmp = tmp->next;
-                // }
-                // prev->next = NULL;
-                // free(tmp);
                 /* Get the num-th command to return it */
                 strcpy(*str, get_command(*hs, num));
                 if ((*str)[strlen(*str) - 1] == '\n')
@@ -135,24 +123,6 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
             }
             else /* Not valid command number */
                 printf("There is no %dth command in myhistory...Try command \"myhistory\" to see the command myhistory\n", num);
-            /* Delete from myhistory commands with syntax myhistory <num> as we dont allow them in myhistory */
-            ptr tmp = (*hs), prev = (*hs);
-            tmp->count--;
-            if (tmp->next == NULL)
-            {
-                free(tmp);
-                *hs = NULL;
-            }
-            else
-            {
-                while (tmp->next != NULL)
-                {
-                    prev = tmp;
-                    tmp = tmp->next;
-                }
-                prev->next = NULL;
-                free(tmp);
-            }
         }
         else /* Bad syntax error message */
             printf("Bad syntax of command \"myhistory\".\nTry \"myhistory\" or \"myhistory <num>\" where num is in number in the range of 1..20\n");
@@ -175,7 +145,7 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
     }
     else if (!strcmp(tokens[0], "destroyalias"))
     { /* Destroy an alias */
-        if (tokens[2] != NULL)
+        if (tokens[1] != NULL && (tokens[2] == NULL || (!strcmp(tokens[2], "|") || !strcmp(tokens[2], ";") || !strcmp(tokens[2], "&"))))
             *al = delal(*al, tokens[1]);
         else /* Syntax error message */
             printf("Bad syntax of command \"destroyalias\".\nTry destroyalias <alias>;\n");
@@ -192,6 +162,15 @@ int hs_al(char **tokens, ptr *hs, alr *al, char **str)
         }
         strcat(*str, "\n");
         return 0;
+    }
+    else if (!strcmp(tokens[0], "alias"))
+    {
+        alr tmp = *al;
+        while (tmp != NULL)
+        {
+            printf("alias %s=%s\n", tmp->alias, tmp->cmd);
+            tmp = tmp->next;
+        }
     }
     else
         return -2;

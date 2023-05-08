@@ -46,5 +46,6 @@ If we import an alias which already exists then we replace its command to be an 
 - Myhistory
 History stores the last 20 commands. If the last command given is the same with the new one then we are not import it again. 
 It can run any of the 20 commands (if exists) with the command myhistory <num>. There is also support in getting and executing aliases.
+If command myhistory is given the history is printed and includes the command myhistory you just gave!
 
 There are no memory leaks.

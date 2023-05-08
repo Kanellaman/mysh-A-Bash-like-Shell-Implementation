@@ -30,7 +30,8 @@ int main(char *argc, char **argv)
       printf("in-mysh-now:> ");
       continue;
     }
-    hs = append(hs, str);
+    if (!(!strcmp(tokens[0], "myhistory") && tokens[1] != NULL))
+      hs = append(hs, str);
     int p = -1;
     while (tokens[++p] != NULL)
       ;
