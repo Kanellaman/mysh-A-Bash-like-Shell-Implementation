@@ -1,4 +1,4 @@
-#include "Interface.h"
+#include "../Include/Interface.h"
 
 /* Parsing,tokenization and dividing commands */
 char **tokenize(char *str)

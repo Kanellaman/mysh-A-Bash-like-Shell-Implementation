@@ -1,4 +1,4 @@
-#include "Interface.h"
+#include "../Include/Interface.h"
 
 pid_t fg = 0;
 

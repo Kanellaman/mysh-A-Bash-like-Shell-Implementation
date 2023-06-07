@@ -1,4 +1,4 @@
-#include "Interface.h"
+#include "../Include/Interface.h"
 /* Signals! */
 void sig_handler(int sig)
 {

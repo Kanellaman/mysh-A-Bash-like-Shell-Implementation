@@ -1,4 +1,4 @@
-#include "Interface.h"
+#include "../Include/Interface.h"
 /* History handling */
 ptr append(ptr hs, char *str)
 { /* Add a command to the myhistory */
