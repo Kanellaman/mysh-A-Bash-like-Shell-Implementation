@@ -1,4 +1,4 @@
-# <div align="center"> Assignment 1-My Shell (mysh)<br/> Κ24 - System-Programming Semester 2022 - 2023
+# <div align="center"> My Shell (mysh)<br/> Assignment 1 for Κ24 - System-Programming Semester 2022 - 2023
 
 This is the README file for the implementation of "mysh" (My Simple Shell), a shell program written in C for Linux environments. It provides a user interface to create and manage processes, run system programs, and supports various features such as redirects, pipes, background execution, signal management, wild characters, and aliases. Bash commands and syntax are valid for this shell! Be careful as some complex syntaxes are not being supported.
 
