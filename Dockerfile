@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Update and install build tools required for compiling C programs
 RUN apt-get update && apt-get install -y \
-    build-essential \
+    gcc \
     make \
     && rm -rf /var/lib/apt/lists/*
 
