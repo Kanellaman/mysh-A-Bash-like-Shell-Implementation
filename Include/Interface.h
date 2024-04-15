@@ -12,7 +12,7 @@
 
 #define LINE_SIZE 1024 /* Max number of characters per command */
 #define TOKEN_NUM 50   /* Max number of individual tokens per command */
-pid_t fg;              /* Stores the pid-leader of the foreground process group */
+extern pid_t fg;       /* Stores the pid-leader of the foreground process group */
 typedef struct history *ptr;
 typedef struct alias *alr;
 struct history
