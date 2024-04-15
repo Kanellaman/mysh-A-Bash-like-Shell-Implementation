@@ -1,13 +1,19 @@
 # Ignoring ALL files (but not Directories)
 *
 !*/
+
 # Except the following files
-!*.c
-!*.h
-!*.mk
+
+!Dockerfile
+!startup.sh
 !Makefile
 !.gitignore
 !README.md
+
+# Except the following extensions
+!*.c
+!*.h
+!*.mk
 !*.txt
 !*.pdf
 !*.so
