@@ -8,7 +8,13 @@ Kanellakis Konstantinos
 
 # Compile & Run
 
-To compile the shell, execute the following command in the terminal:
+## Run with Docker :whale:
+
+**For a quick setup using Docker, run the following command:**
+
+`$ docker run -it kanellaman/mysh-app:1.1`
+
+## Alternively, clone the repo and compile the shell by executing the following command
 
 `$ make`
 
@@ -146,7 +152,7 @@ in-mysh-now:> cat file1 ; sort file2 & sleep 10
 # Brief summary of the code provided
 
 1. The main function initializes variables and sets up signal handling using the `signals` function.
-2. It enters a loop to continuously read user input until the user chooses to exit or Ctrl+D is givenz.
+2. It enters a loop to continuously read user input until the user chooses to exit or Ctrl+D is given.
 3. Inside the loop, it checks for any completed `background process` using waitpid and prints a message for each completed process.
 4. The input string is tokenized into individual commands using the tokenize function.
 5. The commands are separated into a two-dimensional array of tokens using the separate function.
